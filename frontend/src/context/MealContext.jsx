@@ -1,0 +1,36 @@
+import { createContext, useContext, useState } from "react";
+
+const MealContext = createContext(null);
+
+export function MealProvider({ children }) {
+  const [query, setQuery] = useState("");
+  const [meals, setMeals] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [constraints, setConstraints] = useState({});
+  const [totalCost, setTotalCost] = useState(0);
+
+  return (
+    <MealContext.Provider
+      value={{
+        query,
+        setQuery,
+        meals,
+        setMeals,
+        cart,
+        setCart,
+        constraints,
+        setConstraints,
+        totalCost,
+        setTotalCost,
+      }}
+    >
+      {children}
+    </MealContext.Provider>
+  );
+}
+
+export function useMeals() {
+  const ctx = useContext(MealContext);
+  if (!ctx) throw new Error("useMeals must be used within MealProvider");
+  return ctx;
+}
