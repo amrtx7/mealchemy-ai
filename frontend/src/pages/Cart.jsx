@@ -58,13 +58,13 @@ export default function Cart() {
     return (
       <article
         key={`${item.name}-${idx}`}
-        className="theme-raised border rounded-3xl p-5 grid md:grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr] gap-4 items-center"
+        className="theme-raised p-5 grid md:grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr] gap-4 items-center"
       >
         <div>
           <div className="flex items-center gap-3 mb-2">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                isOptional ? "theme-muted-text border" : "theme-accent-bg"
+              className={`px-2.5 py-1 text-xs font-black rounded-md border-brutal border-black shadow-neo-sm ${
+                isOptional ? "theme-muted-text bg-[var(--surface-raised)]" : "theme-accent-bg"
               }`}
             >
               {item.available === false ? "Unavailable" : item.priorityLabel || "High priority"}
@@ -73,7 +73,7 @@ export default function Cart() {
               {item.store || "No store"}
             </span>
           </div>
-          <h3 className="text-2xl font-serif font-bold theme-text capitalize leading-tight">
+          <h3 className="text-2xl font-black theme-text capitalize leading-tight">
             {item.name}
           </h3>
           <p className="text-sm theme-muted-text mt-1 capitalize">
@@ -81,12 +81,12 @@ export default function Cart() {
           </p>
         </div>
 
-        <div className="theme-muted rounded-2xl p-4 border">
+        <div className="theme-muted p-4">
           <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-1">Quantity</p>
-          <p className="text-xl font-serif font-bold theme-text">{displayPackage(item)}</p>
+          <p className="text-xl font-black theme-text">{displayPackage(item)}</p>
         </div>
 
-        <div className="theme-muted rounded-2xl p-4 border">
+        <div className="theme-muted p-4">
           <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-1">Reason</p>
           <p className="text-sm theme-text leading-snug">
             {item.reason || (isOptional ? "Optional for this budget." : "Included in recommended cart.")}
@@ -100,7 +100,7 @@ export default function Cart() {
               Not priced
             </p>
           ) : (
-            <p className={`text-3xl font-serif font-bold ${isOptional ? "theme-muted-text" : "theme-accent"}`}>
+            <p className={`text-3xl font-black ${isOptional ? "theme-muted-text" : "theme-accent"}`}>
               {money(item.price)}
             </p>
           )}
@@ -115,32 +115,32 @@ export default function Cart() {
         <p className="text-xs font-bold uppercase tracking-[0.25em] theme-accent mb-3">
           Budget-Aware Cart
         </p>
-        <h1 className="text-5xl font-serif theme-text mb-4">Optimized Grocery Cart</h1>
+        <h1 className="text-4xl md:text-5xl font-black theme-text mb-4 drop-shadow-[2px_2px_0_var(--border)]">Optimized Grocery Cart</h1>
         <p className="theme-muted-text text-lg">
           Items are priced first, then separated into high-priority and optional buys.
         </p>
       </div>
 
       {cart.length === 0 ? (
-        <div className="text-center py-20 theme-muted rounded-3xl border">
+        <div className="text-center py-20 theme-muted">
           <p className="theme-muted-text text-lg mb-6">Your cart is empty. Please select meals to generate a cart.</p>
           <button className="btn-primary" onClick={handleGenerateAgain}>Start Over</button>
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="theme-hero rounded-[2rem] p-6 md:p-8">
+          <div className="theme-hero p-6 md:p-8">
             <div className="grid md:grid-cols-4 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Budget</p>
-                <p className="text-3xl font-serif font-bold">{budget ? money(budget) : "Not set"}</p>
+                <p className="text-3xl font-black">{budget ? money(budget) : "Not set"}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Recommended</p>
-                <p className="text-3xl font-serif font-bold">{money(highPriorityTotal)}</p>
+                <p className="text-3xl font-black">{money(highPriorityTotal)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Full Cart</p>
-                <p className="text-3xl font-serif font-bold">{money(fullCartTotal)}</p>
+                <p className="text-3xl font-black">{money(fullCartTotal)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Stores Used</p>
@@ -153,12 +153,12 @@ export default function Cart() {
           </div>
 
           <div>
-            <h2 className="text-3xl font-serif font-bold theme-text mb-4">High Priority</h2>
+            <h2 className="text-3xl font-black theme-text mb-4">High Priority</h2>
             <div className="space-y-4">
               {highPriorityItems.length > 0 ? (
                 highPriorityItems.map(renderItem)
               ) : (
-                <div className="theme-muted border rounded-3xl p-6 theme-muted-text">
+                <div className="theme-muted p-6 theme-muted-text">
                   No high-priority items fit the current budget.
                 </div>
               )}
@@ -167,7 +167,7 @@ export default function Cart() {
 
           {optionalItems.length > 0 && (
             <div>
-              <h2 className="text-3xl font-serif font-bold theme-text mb-2">Optional / Budget Risks</h2>
+              <h2 className="text-3xl font-black theme-text mb-2">Optional / Budget Risks</h2>
               <p className="theme-muted-text mb-4">
                 These are useful, but they were removed from the recommended total because they are expensive,
                 non-core, unavailable, or push the cart too far above budget.
@@ -176,19 +176,19 @@ export default function Cart() {
             </div>
           )}
 
-          <div className="theme-raised p-6 md:p-8 rounded-[2rem] border flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="theme-raised p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="grid sm:grid-cols-3 gap-5 w-full md:w-auto">
               <div>
                 <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Recommended Total</p>
-                <p className="text-4xl font-serif font-bold theme-accent">{money(highPriorityTotal)}</p>
+                <p className="text-4xl font-black theme-accent">{money(highPriorityTotal)}</p>
               </div>
               <div>
                 <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Optional Total</p>
-                <p className="text-3xl font-serif font-bold theme-muted-text">{money(optionalTotal)}</p>
+                <p className="text-3xl font-black theme-muted-text">{money(optionalTotal)}</p>
               </div>
               <div>
                 <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Full Cart Total</p>
-                <p className="text-3xl font-serif font-bold theme-text">{money(fullCartTotal)}</p>
+                <p className="text-3xl font-black theme-text">{money(fullCartTotal)}</p>
               </div>
             </div>
 

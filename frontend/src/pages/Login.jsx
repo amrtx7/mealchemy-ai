@@ -40,8 +40,11 @@ export default function Login() {
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         <button className="w-full btn-primary">Login</button>
       </form>
-      <p className="text-sm mt-3 text-slate-300">
-        New user? <Link className="text-[#74B9FF]" to="/signup">Create account</Link>
+      <p className="text-sm mt-4 theme-muted-text font-semibold">
+        New user?{" "}
+        <Link className="font-black underline decoration-2 underline-offset-4 text-[var(--link)]" to="/signup">
+          Create account
+        </Link>
       </p>
     </section>
   );

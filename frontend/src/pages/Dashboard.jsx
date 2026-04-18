@@ -84,15 +84,15 @@ export default function Dashboard() {
 
   return (
     <section className="max-w-6xl mx-auto my-10 px-6 space-y-8">
-      <div className="relative overflow-hidden theme-hero p-8 md:p-10 rounded-[2rem] shadow-sm">
-        <div className="absolute -right-16 -top-20 w-64 h-64 rounded-full bg-white/15" />
-        <div className="absolute -left-20 -bottom-24 w-72 h-72 rounded-full bg-white/10" />
+      <div className="relative overflow-hidden theme-hero p-8 md:p-10 rounded-2xl">
+        <div className="absolute -right-10 -top-10 w-40 h-40 border-brutal border-[var(--page-bg)] bg-[var(--accent-warm)] opacity-90 rotate-6 pointer-events-none shadow-neo hidden md:block" />
+        <div className="absolute -left-8 -bottom-8 w-36 h-36 border-brutal border-[var(--page-bg)] bg-[var(--accent)] opacity-90 -rotate-6 pointer-events-none shadow-neo hidden md:block" />
         <div className="relative z-10 grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-end">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.25em] mb-3 opacity-80">
               Your Kitchen Today
             </p>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
+            <h1 className="text-4xl md:text-5xl font-black leading-tight">
               Welcome back, {userName}
             </h1>
             <p className="mt-3 max-w-2xl opacity-85">
@@ -101,8 +101,9 @@ export default function Dashboard() {
           </div>
 
           <button
+            type="button"
             onClick={() => navigate("/")}
-            className="theme-accent-bg rounded-full px-8 py-4 font-bold shadow-lg hover:scale-[1.02] transition-transform"
+            className="theme-accent-bg px-8 py-4 font-black uppercase tracking-wide text-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
           >
             Plan a New Meal
           </button>
@@ -121,22 +122,22 @@ export default function Dashboard() {
           ["Meals", weeklyMeals, "planned this week", "theme-text"],
           ["Grocery Spend", `₹${weeklySpend}`, "from saved carts", "theme-accent"],
         ].map(([label, value, caption, valueClass]) => (
-          <div key={label} className="theme-raised rounded-[1.5rem] p-5 border">
+          <div key={label} className="theme-raised p-5">
             <p className="text-xs uppercase tracking-widest theme-muted-text font-bold">{label}</p>
-            <p className={`text-4xl font-serif font-bold mt-2 ${valueClass}`}>{value}</p>
+            <p className={`text-4xl font-black mt-2 ${valueClass}`}>{value}</p>
             <p className="text-sm theme-muted-text">{caption}</p>
           </div>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-[1fr_0.85fr] gap-8">
-        <div className="theme-raised p-6 rounded-[2rem] border">
+        <div className="theme-raised p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest theme-accent">Today</p>
-              <h2 className="text-3xl font-serif font-bold theme-text">Meal Plan</h2>
+              <h2 className="text-3xl font-black theme-text">Meal Plan</h2>
             </div>
-            <span className="px-4 py-2 rounded-full theme-muted text-sm font-bold">
+            <span className="px-3 py-1.5 rounded-md theme-muted text-sm font-black border-brutal border-black shadow-neo-sm">
               {data.todayMealPlan ? formatDate(data.todayMealPlan.createdAt) : "No plan"}
             </span>
           </div>
@@ -144,7 +145,7 @@ export default function Dashboard() {
           {data.todayMealPlan ? (
             <div className="grid sm:grid-cols-2 gap-4">
               {MEAL_TYPES.map((type) => (
-                <div key={type} className="theme-muted rounded-2xl p-4 border">
+                <div key={type} className="theme-muted p-4">
                   <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-2">
                     {type}
                   </p>
@@ -163,7 +164,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="theme-muted p-8 rounded-3xl text-center border border-dashed">
+            <div className="theme-muted p-8 text-center border-dashed border-2">
               <p className="theme-muted-text font-medium mb-5">No meals generated today.</p>
               <button className="btn-primary" onClick={() => navigate("/")}>
                 Create Today&apos;s Plan
@@ -172,11 +173,11 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="theme-muted p-6 rounded-[2rem] border shadow-sm">
+        <div className="theme-muted p-6 shadow-neo">
           <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-2">
             Meal Mix
           </p>
-          <h2 className="text-3xl font-serif font-bold theme-text mb-5">
+          <h2 className="text-3xl font-black theme-text mb-5">
             This Week&apos;s Balance
           </h2>
           <div className="space-y-3">
@@ -184,15 +185,15 @@ export default function Dashboard() {
               const count = (weeklyGrouped[type] || []).length;
               const width = weeklyMeals ? Math.max(10, Math.round((count / weeklyMeals) * 100)) : 0;
               return (
-                <div key={type} className="theme-raised rounded-2xl p-4 border">
+                <div key={type} className="theme-raised p-4">
                   <div className="flex justify-between text-sm font-bold theme-text mb-2">
                     <span>{type}</span>
                     <span>{count}</span>
                   </div>
-                  <div className="h-2 rounded-full theme-muted overflow-hidden">
+                  <div className="h-3 rounded-sm theme-muted overflow-hidden border border-black">
                     <div
-                      className="h-full rounded-full"
-                      style={{ width: `${width}%`, background: "var(--primary)" }}
+                      className="h-full rounded-sm border-r border-black"
+                      style={{ width: `${width}%`, background: "var(--accent-warm)" }}
                     />
                   </div>
                 </div>
@@ -202,11 +203,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="theme-raised p-6 rounded-[2rem] border">
+      <div className="theme-raised p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest theme-accent">Quick Access</p>
-            <h2 className="text-3xl font-serif font-bold theme-text">Latest Saved Plans</h2>
+            <h2 className="text-3xl font-black theme-text">Latest Saved Plans</h2>
           </div>
           <button className="btn-secondary px-5 py-3 text-sm" onClick={() => navigate("/history")}>
             Open History
@@ -216,8 +217,8 @@ export default function Dashboard() {
         {latestPlans.length > 0 ? (
           <div className="grid md:grid-cols-3 gap-4">
             {latestPlans.map((plan) => (
-              <article key={plan._id} className="theme-muted rounded-2xl p-4 border">
-                <p className="font-serif font-bold text-xl theme-text leading-tight">
+              <article key={plan._id} className="theme-muted p-4">
+                <p className="font-black text-xl theme-text leading-tight">
                   {plan.query || "Generated Plan"}
                 </p>
                 <p className="text-xs theme-muted-text mt-2">
@@ -230,7 +231,7 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="theme-muted p-8 rounded-3xl text-center border border-dashed">
+          <div className="theme-muted p-8 text-center border-dashed border-2">
             <p className="theme-muted-text font-medium">Saved plans will appear here after you save a cart.</p>
           </div>
         )}

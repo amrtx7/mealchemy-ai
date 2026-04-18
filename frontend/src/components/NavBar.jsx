@@ -14,22 +14,24 @@ export default function NavBar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl py-5 transition-all border-b theme-surface">
-      <nav className="max-w-7xl mx-auto px-8 flex items-center justify-between gap-5">
+    <header className="sticky top-0 z-50 py-4 border-b-4 border-black bg-[var(--surface)] shadow-neo">
+      <nav className="max-w-7xl mx-auto px-6 md:px-8 flex items-center justify-between gap-5">
         <Link
           to="/"
-          className="font-serif font-black text-3xl theme-text flex items-center gap-3 hover:opacity-90 transition-opacity"
+          className="font-sans font-black text-2xl md:text-3xl theme-text flex items-center gap-3 hover:translate-x-0.5 hover:translate-y-0.5 transition-transform"
         >
           <span className="tracking-tighter">Mealchemy Ai</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 font-serif theme-text">
+        <div className="hidden md:flex items-center gap-6 font-sans font-bold theme-text">
           {links.map(([label, to]) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                isActive ? "theme-accent font-bold" : "hover:opacity-70 transition-opacity"
+                isActive
+                  ? "theme-accent underline decoration-4 underline-offset-4"
+                  : "hover:opacity-80 transition-opacity"
               }
             >
               {label}
@@ -37,10 +39,10 @@ export default function NavBar() {
           ))}
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden sm:flex items-center gap-2 border px-4 py-2 rounded-full theme-muted">
-            <span className="text-sm font-bold font-serif">2212662</span>
-            <span className="text-xs">📞</span>
+        <div className="flex items-center gap-4 md:gap-6">
+          <div className="hidden sm:flex items-center gap-2 border-brutal border-black px-3 py-1.5 rounded-md theme-muted shadow-neo-sm font-sans">
+            <span className="text-sm font-black">2212662</span>
+            <span className="text-xs" aria-hidden>📞</span>
           </div>
 
           <div 
@@ -63,7 +65,7 @@ export default function NavBar() {
 
           {user && (
             <button
-              className="theme-text text-sm font-bold opacity-75 hover:opacity-100 uppercase tracking-widest"
+              className="theme-text text-xs font-black uppercase tracking-widest border-brutal border-black px-3 py-1.5 rounded-md bg-[var(--surface-raised)] shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
               onClick={logout}
             >
               Logout

@@ -111,12 +111,12 @@ export default function IngredientSelection() {
     <section className="max-w-5xl mx-auto my-16 px-6">
       {/* Header */}
       <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#164E40]/10 text-[#164E40] text-sm font-bold tracking-wider uppercase mb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#FDFBF6] text-[#164E40] text-xs font-black tracking-wider uppercase mb-6 border-brutal border-black shadow-neo-sm">
           <span>Step 3 of 4</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#E79B48] inline-block" />
+          <span className="w-2 h-2 rounded-sm bg-[#E79B48] inline-block border border-black" />
           <span>User-in-the-Loop</span>
         </div>
-        <h1 className="text-5xl font-serif text-[#164E40] mb-4">
+        <h1 className="text-4xl md:text-5xl font-black text-[#164E40] mb-4 drop-shadow-[2px_2px_0_#000]">
           Select Ingredients to Purchase
         </h1>
         <p className="text-[#164E40]/70 text-lg max-w-xl mx-auto">
@@ -126,9 +126,9 @@ export default function IngredientSelection() {
       </div>
 
       {/* Stats bar */}
-      <div className="flex items-center justify-between bg-[#F4EFE5] border border-[#E8DDCA] rounded-2xl px-6 py-4 mb-8">
-        <p className="text-[#164E40] font-semibold text-sm">
-          <span className="text-[#E79B48] font-serif text-2xl font-bold">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#F4EFE5] border-brutal border-black rounded-xl px-5 py-4 mb-8 shadow-neo">
+        <p className="text-[#164E40] font-bold text-sm">
+          <span className="text-[#E79B48] font-black text-2xl tabular-nums">
             {selectedCount}
           </span>{" "}
           of {totalCount} ingredients selected
@@ -136,13 +136,15 @@ export default function IngredientSelection() {
         <div className="flex gap-3">
           <button
             onClick={selectAll}
-            className="text-xs font-bold uppercase tracking-wider text-[#164E40] bg-white border border-[#E8DDCA] hover:border-[#164E40] px-4 py-2 rounded-full transition-all"
+            type="button"
+            className="text-xs font-black uppercase tracking-wider text-[#164E40] bg-white border-brutal border-black px-4 py-2 rounded-md shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
           >
             Select All
           </button>
           <button
             onClick={clearAll}
-            className="text-xs font-bold uppercase tracking-wider text-[#164E40]/60 hover:text-[#164E40] px-4 py-2 rounded-full transition-all"
+            type="button"
+            className="text-xs font-black uppercase tracking-wider text-[#164E40] bg-[#fff3bf] border-brutal border-black px-4 py-2 rounded-md shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
           >
             Clear All
           </button>
@@ -159,12 +161,12 @@ export default function IngredientSelection() {
               id={`ingredient-${idx}`}
               onClick={() => toggle(item)}
               className={`
-                relative flex flex-col items-center gap-3 p-5 rounded-3xl border-2 cursor-pointer
-                transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group
+                relative flex flex-col items-center gap-3 p-4 md:p-5 rounded-xl border-brutal border-black cursor-pointer
+                transition-all duration-200 hover:-translate-y-0.5 shadow-neo group
                 ${
                   isSelected
-                    ? "border-[#E79B48] bg-[#FDFBF6] shadow-[0_4px_20px_rgba(231,155,72,0.18)] ring-1 ring-[#E79B48]"
-                    : "border-[#E8DDCA] bg-[#F4EFE5] opacity-60 hover:opacity-80 hover:border-[#164E40]/20"
+                    ? "bg-[#FDFBF6] shadow-neo-lg ring-0 outline outline-[3px] outline-[#E79B48] -outline-offset-[3px]"
+                    : "bg-[#F4EFE5] opacity-75 hover:opacity-100 hover:shadow-neo-lg"
                 }
               `}
               style={{ animationDelay: `${idx * 40}ms` }}
@@ -173,9 +175,9 @@ export default function IngredientSelection() {
               {/* Checkmark badge */}
               <span
                 className={`
-                  absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center
-                  transition-all duration-200
-                  ${isSelected ? "border-[#E79B48] bg-[#E79B48]" : "border-[#E8DDCA] bg-white"}
+                  absolute top-3 right-3 w-6 h-6 rounded-md border-brutal border-black flex items-center justify-center
+                  transition-all duration-200 shadow-neo-sm
+                  ${isSelected ? "bg-[#E79B48]" : "bg-white"}
                 `}
               >
                 {isSelected && (
@@ -215,20 +217,20 @@ export default function IngredientSelection() {
 
       {/* Error */}
       {error && (
-        <p className="text-red-500 font-medium bg-red-50 px-6 py-3 rounded-2xl border border-red-200 text-center mb-6">
+        <p className="text-[#8b0000] font-bold bg-[#ffe5e5] px-6 py-3 rounded-lg border-brutal border-black shadow-neo-sm text-center mb-6">
           {error}
         </p>
       )}
 
       {/* Action footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[#F4EFE5] border border-[#E8DDCA] rounded-3xl px-8 py-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[#F4EFE5] border-brutal border-black rounded-2xl px-6 md:px-8 py-6 shadow-neo">
         <div>
           <p className="text-[#164E40]/60 text-sm uppercase font-bold tracking-wider mb-1">
             Ready to optimize
           </p>
           <p className="text-[#164E40] font-medium">
             Your cart will be built from{" "}
-            <span className="font-serif font-bold text-[#E79B48] text-xl">
+            <span className="font-black text-[#E79B48] text-xl tabular-nums">
               {selectedCount}
             </span>{" "}
             ingredient{selectedCount !== 1 ? "s" : ""}

@@ -80,33 +80,33 @@ export default function Home() {
       />
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
-        <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif text-[#164E40] max-w-5xl mx-auto leading-tight mb-12">
+        <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-[#164E40] max-w-5xl mx-auto leading-[1.05] mb-12 drop-shadow-[2px_2px_0_#000]">
           Transforming how you plan meals and make smarter food decisions.
         </h1>
 
         <div className="mb-24">
-          <a href="#planner" className="btn-primary inline-flex items-center gap-3 text-xl px-12 py-5">
+          <a href="#planner" className="btn-primary inline-flex items-center gap-3 text-lg md:text-xl px-10 py-4 md:px-12 md:py-5">
             Start Your Journey
           </a>
         </div>
 
-        <div className="w-full max-w-5xl mx-auto h-[400px] md:h-[600px] rounded-[4rem] overflow-hidden shadow-2xl bg-[#E8DDCA] mb-20 relative border-8 border-white transition-transform hover:scale-[1.01] duration-700 group">
+        <div className="w-full max-w-5xl mx-auto h-[400px] md:h-[600px] rounded-2xl overflow-hidden bg-[#E8DDCA] mb-20 relative border-brutal border-black shadow-neo-lg transition-transform hover:-translate-y-0.5 duration-300 group">
           <img
             src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000"
             alt="Delicious meal table"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+            className="w-full h-full object-cover border-b-brutal border-black group-hover:brightness-105 transition-all duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#164E40]/40 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
         </div>
       </section>
 
-      <section id="planner" className="bg-[#eeae5c] py-32 px-6 relative overflow-hidden">
+      <section id="planner" className="bg-[#eeae5c] py-24 md:py-32 px-6 relative overflow-hidden border-y-4 border-black">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <div>
-            <h2 className="text-6xl font-serif text-[#164E40] leading-tight mb-8">
+            <h2 className="text-4xl md:text-6xl font-black text-[#164E40] leading-tight mb-8">
               A healthier way now has a seat at the table.
             </h2>
-            <p className="text-[#164E40] font-medium mb-12 opacity-80 text-xl leading-relaxed">
+            <p className="text-[#164E40] font-semibold mb-12 text-lg md:text-xl leading-relaxed max-w-xl">
               Our AI understands your cravings, diet, and budget to create a list that's as smart as it is delicious.
             </p>
 
@@ -117,21 +117,21 @@ export default function Home() {
                 { title: "Seamless", desc: "From prompt to pantry in minutes." }
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-6 group">
-                  <span className="w-12 h-12 flex-shrink-0 rounded-full bg-[#164E40] text-white flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform">✨</span>
+                  <span className="w-12 h-12 flex-shrink-0 rounded-md bg-[#164E40] text-white flex items-center justify-center text-xl border-brutal border-black shadow-neo group-hover:-translate-y-0.5 transition-transform">✨</span>
                   <div>
-                    <h4 className="text-xl font-bold text-[#164E40] mb-1">{item.title}</h4>
-                    <p className="text-[#164E40]/70 font-medium">{item.desc}</p>
+                    <h4 className="text-xl font-black text-[#164E40] mb-1">{item.title}</h4>
+                    <p className="text-[#164E40]/80 font-medium">{item.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-[#FDFBF6] p-8 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.1)] border border-white">
-            <h3 className="text-3xl font-serif text-[#164E40] mb-8 text-center font-bold">Your Custom Menu</h3>
+          <div className="bg-[#FDFBF6] p-6 md:p-8 rounded-2xl border-brutal border-black shadow-neo-lg">
+            <h3 className="text-2xl md:text-3xl font-black text-[#164E40] mb-8 text-center">Your Custom Menu</h3>
             <form onSubmit={handleGenerate} className="space-y-6">
               <div>
-                <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-3">What are you craving?</label>
+                <label className="block text-xs font-black text-[#164E40]/80 uppercase tracking-widest mb-3">What are you craving?</label>
                 <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -189,14 +189,14 @@ export default function Home() {
 
 
               {error && (
-                <div className="bg-red-50 text-red-600 p-5 rounded-2xl text-center border border-red-100 font-medium">
+                <div className="bg-[#ffe5e5] text-[#8b0000] p-4 rounded-lg text-center border-brutal border-black font-bold shadow-neo-sm">
                   {error}
                 </div>
               )}
 
               <button
                 disabled={loading}
-                className="w-full btn-primary text-2xl flex items-center justify-center gap-3 py-6 shadow-[0_20px_50px_rgba(22,78,64,0.3)] hover:shadow-[0_25px_60px_rgba(22,78,64,0.4)]"
+                className="w-full btn-primary text-xl md:text-2xl flex items-center justify-center gap-3 py-5 md:py-6"
               >
                 {loading ? (
                   <>

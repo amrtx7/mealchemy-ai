@@ -37,8 +37,11 @@ export default function Signup() {
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         <button className="w-full btn-primary">Sign up</button>
       </form>
-      <p className="text-sm mt-3 text-slate-300">
-        Already have an account? <Link className="text-[#74B9FF]" to="/login">Login</Link>
+      <p className="text-sm mt-4 theme-muted-text font-semibold">
+        Already have an account?{" "}
+        <Link className="font-black underline decoration-2 underline-offset-4 text-[var(--link)]" to="/login">
+          Login
+        </Link>
       </p>
     </section>
   );

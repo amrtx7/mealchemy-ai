@@ -101,13 +101,13 @@ export default function History() {
 
   return (
     <section className="max-w-6xl mx-auto my-10 px-6 space-y-8">
-      <div className="theme-raised p-8 rounded-[2rem] border">
+      <div className="theme-raised p-8">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] theme-accent mb-3">
               Saved Plans
             </p>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold theme-text">
+            <h1 className="text-4xl md:text-5xl font-black theme-text">
               Meal History
             </h1>
             <p className="theme-muted-text mt-3 max-w-2xl">
@@ -115,13 +115,16 @@ export default function History() {
             </p>
           </div>
 
-          <div className="flex gap-2 theme-muted p-1 rounded-full border overflow-x-auto">
+          <div className="flex gap-2 theme-muted p-1.5 rounded-lg border-brutal border-black shadow-neo-sm overflow-x-auto">
             {PERIODS.map((item) => (
               <button
                 key={item.key}
+                type="button"
                 onClick={() => setPeriod(item.key)}
-                className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
-                  period === item.key ? "btn-primary" : "theme-muted-text hover:theme-text"
+                className={`px-4 py-2 rounded-md text-sm font-black whitespace-nowrap transition-all border-brutal border-black ${
+                  period === item.key
+                    ? "btn-primary !shadow-none translate-x-0.5 translate-y-0.5"
+                    : "theme-muted-text bg-[var(--surface-raised)] shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                 }`}
               >
                 {item.label}
@@ -131,17 +134,17 @@ export default function History() {
         </div>
 
         <div className="grid grid-cols-3 gap-3 mt-8">
-          <div className="theme-hero rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-widest opacity-75">Plans</p>
-            <p className="text-3xl font-serif font-bold">{filteredHistory.length}</p>
+          <div className="theme-hero p-4">
+            <p className="text-xs uppercase tracking-widest opacity-75 font-bold">Plans</p>
+            <p className="text-3xl font-black">{filteredHistory.length}</p>
           </div>
-          <div className="theme-muted rounded-2xl p-4 border">
-            <p className="text-xs uppercase tracking-widest theme-muted-text">Meals</p>
-            <p className="text-3xl font-serif font-bold theme-text">{totalMeals}</p>
+          <div className="theme-muted p-4">
+            <p className="text-xs uppercase tracking-widest theme-muted-text font-bold">Meals</p>
+            <p className="text-3xl font-black theme-text">{totalMeals}</p>
           </div>
-          <div className="theme-muted rounded-2xl p-4 border">
-            <p className="text-xs uppercase tracking-widest theme-muted-text">Spend</p>
-            <p className="text-3xl font-serif font-bold theme-accent">₹{totalCost}</p>
+          <div className="theme-muted p-4">
+            <p className="text-xs uppercase tracking-widest theme-muted-text font-bold">Spend</p>
+            <p className="text-3xl font-black theme-accent">₹{totalCost}</p>
           </div>
         </div>
       </div>
@@ -153,13 +156,13 @@ export default function History() {
       )}
 
       {filteredHistory.length === 0 && !error ? (
-        <div className="theme-raised p-16 rounded-[2.5rem] border text-center">
+        <div className="theme-raised p-16 text-center">
           <p className="theme-muted-text font-medium text-lg">No meal plans found for this period.</p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-8">
-          <div className="theme-raised p-6 rounded-[2rem] border">
-            <h2 className="text-3xl font-serif font-bold theme-text mb-6">
+          <div className="theme-raised p-6">
+            <h2 className="text-3xl font-black theme-text mb-6">
               Meal Timeline
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
@@ -168,13 +171,13 @@ export default function History() {
                 if (meals.length === 0) return null;
 
                 return (
-                  <div key={type} className="theme-muted rounded-2xl p-5 border">
-                    <h3 className="font-serif text-2xl font-bold theme-text mb-4">
+                  <div key={type} className="theme-muted p-5">
+                    <h3 className="font-black text-2xl theme-text mb-4">
                       {type === "Meal" ? "Other Meals" : type}
                     </h3>
                     <div className="space-y-3">
                       {meals.map((meal, idx) => (
-                        <div key={`${type}-${meal.meal}-${idx}`} className="theme-raised rounded-xl p-3 border">
+                        <div key={`${type}-${meal.meal}-${idx}`} className="theme-raised p-3">
                           <p className="font-bold theme-text leading-tight">{meal.meal}</p>
                           <p className="text-xs theme-muted-text mt-1">
                             {formatDate(meal.plan.createdAt)} · ₹{meal.plan.totalCost || 0}
@@ -192,11 +195,11 @@ export default function History() {
             {filteredHistory.map((entry) => (
               <article
                 key={entry._id}
-                className="theme-raised p-5 rounded-[1.5rem] border transition-all"
+                className="theme-raised p-5 transition-transform hover:-translate-y-0.5"
               >
                 <div className="flex justify-between gap-4 mb-4">
                   <div>
-                    <h3 className="text-xl font-serif font-bold theme-text">
+                    <h3 className="text-xl font-black theme-text">
                       {entry.query || "Generated Plan"}
                     </h3>
                     <p className="text-xs font-medium theme-muted-text mt-1">
@@ -206,7 +209,7 @@ export default function History() {
                       })}
                     </p>
                   </div>
-                  <p className="text-2xl font-serif font-bold theme-accent">
+                  <p className="text-2xl font-black theme-accent">
                     ₹{entry.totalCost || 0}
                   </p>
                 </div>
@@ -215,7 +218,7 @@ export default function History() {
                   {(entry.meals || []).slice(0, 5).map((meal, idx) => (
                     <span
                       key={`${entry._id}-${idx}`}
-                      className="px-3 py-1 theme-muted rounded-full text-xs font-bold border"
+                      className="px-2.5 py-1 theme-muted text-xs font-black rounded-md shadow-neo-sm"
                     >
                       {meal.meal}
                     </span>
