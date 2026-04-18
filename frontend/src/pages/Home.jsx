@@ -101,8 +101,8 @@ export default function Home() {
       </section>
 
       <section id="planner" className="bg-[#eeae5c] py-32 px-6 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-5 gap-20 items-center relative z-10">
-          <div className="lg:col-span-2">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
+          <div>
             <h2 className="text-6xl font-serif text-[#164E40] leading-tight mb-8">
               A healthier way now has a seat at the table.
             </h2>
@@ -127,23 +127,23 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-3 bg-[#FDFBF6] p-12 md:p-16 rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.1)] border border-white">
-            <h3 className="text-4xl font-serif text-[#164E40] mb-10 text-center font-bold">Your Custom Menu</h3>
-            <form onSubmit={handleGenerate} className="space-y-8">
+          <div className="bg-[#FDFBF6] p-8 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.1)] border border-white">
+            <h3 className="text-3xl font-serif text-[#164E40] mb-8 text-center font-bold">Your Custom Menu</h3>
+            <form onSubmit={handleGenerate} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-3">What are you craving?</label>
                 <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="e.g. A comforting Sunday brunch with pancakes and fresh fruits..."
-                  className="input-magic min-h-[120px] text-lg"
+                  className="input-magic min-h-[100px] text-lg py-3"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-1">Cuisine Style</label>
-                  <select name="cuisine" value={filters.cuisine} onChange={handleFilterChange} className="input-magic py-4 cursor-pointer hover:border-[#164E40]/40 transition-colors">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Cuisine Style</label>
+                  <select name="cuisine" value={filters.cuisine} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
                     <option value="Indian">Indian</option>
                     <option value="Punjabi">Punjabi</option>
                     <option value="South Indian">South Indian</option>
@@ -153,9 +153,9 @@ export default function Home() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-1">Meal Setting</label>
-                  <select name="mealType" value={filters.mealType} onChange={handleFilterChange} className="input-magic py-4 cursor-pointer hover:border-[#164E40]/40 transition-colors">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Meal Setting</label>
+                  <select name="mealType" value={filters.mealType} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
                     <option value="Breakfast">Breakfast</option>
                     <option value="Lunch">Lunch</option>
                     <option value="Dinner">Dinner</option>
@@ -163,49 +163,30 @@ export default function Home() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-1">Dietary Focus</label>
-                  <select name="diet" value={filters.diet} onChange={handleFilterChange} className="input-magic py-4 cursor-pointer hover:border-[#164E40]/40 transition-colors">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Dietary Focus</label>
+                  <select name="diet" value={filters.diet} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
                     <option value="Veg">Pure Vegetarian</option>
                     <option value="Non-Veg">Non-Vegetarian</option>
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[#164E40]/60 uppercase tracking-widest mb-1">Expected Budget (₹)</label>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Expected Budget (₹)</label>
                   <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[#164E40]/40 font-bold">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#164E40]/40 font-bold text-xs">₹</span>
                     <input
                       type="number"
                       name="budget"
                       value={filters.budget}
                       onChange={handleFilterChange}
                       placeholder="500"
-                      className="input-magic py-4 pl-10"
+                      className="input-magic py-1.5 pl-7 pr-3 rounded-xl text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-6 bg-[#F4EFE5] rounded-3xl border border-[#E8DDCA]">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">💪</span>
-                  <div>
-                    <h4 className="font-bold text-[#164E40]">High Protein Mode</h4>
-                    <p className="text-xs text-[#164E40]/60">Prioritize protein-rich ingredients</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="protein"
-                    checked={filters.protein}
-                    onChange={handleFilterChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-14 h-8 bg-[#E8DDCA] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-[#E8DDCA] after:shadow-sm after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[#164E40]"></div>
-                </label>
-              </div>
 
               {error && (
                 <div className="bg-red-50 text-red-600 p-5 rounded-2xl text-center border border-red-100 font-medium">
@@ -225,7 +206,7 @@ export default function Home() {
                     </svg>
                     <span>Crafting Menu...</span>
                   </>
-                ) : "Create Magic ✨"}
+                ) : "Generate"}
               </button>
             </form>
           </div>
