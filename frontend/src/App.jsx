@@ -21,7 +21,7 @@ export default function App() {
     <div className="relative min-h-screen">
       <PageDecor boost={decorBoost} />
       <NavBar />
-      <main className="relative z-10 px-4 pb-10">
+      <main className="relative z-10 px-4 pb-10 overflow-x-hidden">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

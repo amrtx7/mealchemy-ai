@@ -54,6 +54,17 @@ export default function Home() {
 
   return (
     <div className="relative overflow-hidden">
+      {/* Bold decorative circles (neobrutal) */}
+      <div className="abstract-circle w-96 h-96 -top-20 -left-20 animate-drift" />
+      <div
+        className="abstract-circle w-80 h-80 top-1/2 -right-20 animate-float"
+        style={{ animationDelay: "2s" }}
+      />
+      <div
+        className="abstract-circle w-64 h-64 bottom-10 left-1/4 animate-drift"
+        style={{ animationDelay: "4s" }}
+      />
+
       {/* Floating Food Elements (Inspired by Indian Cuisine) */}
       <img
         src="saras.png"
@@ -75,7 +86,7 @@ export default function Home() {
       />
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
-        <h1 className="font-script text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold text-[var(--text)] max-w-5xl mx-auto leading-snug mb-12">
+        <h1 className="font-script text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--text)] max-w-5xl mx-auto leading-[1.15] mb-12 tracking-wide">
           Transforming how you plan meals and make smarter food decisions.
         </h1>
 
@@ -95,7 +106,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="planner" className="bg-[#eeae5c] py-24 md:py-32 px-6 relative overflow-hidden border-y-4 border-black">
+      <section
+        id="planner"
+        className="relative w-screen left-1/2 -translate-x-1/2 bg-[#ffb703] py-24 md:py-32 px-6 sm:px-8 overflow-hidden border-y-[3px] border-black"
+      >
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <div>
             <h2 className="text-4xl md:text-6xl font-black text-[#164E40] leading-tight mb-8">

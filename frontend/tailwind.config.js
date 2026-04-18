@@ -13,7 +13,7 @@ export default {
       fontFamily: {
         sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         serif: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
-        script: ['"Caveat"', 'cursive'],
+        script: ['"Dancing Script"', 'cursive'],
       },
       boxShadow: {
         neo: '4px 4px 0 0 #000000',

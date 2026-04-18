@@ -21,9 +21,11 @@ export default function Login() {
   };
 
   return (
-    <section className="max-w-md mx-auto mt-12 card p-6">
-      <h1 className="text-xl font-bold mb-4">Welcome to <span className="brand-text">Mealchemy</span> ✨</h1>
-      <form onSubmit={submit} className="space-y-3">
+    <section className="max-w-md mx-auto mt-12 card p-6 text-center">
+      <h1 className="text-xl font-bold mb-4">
+        Welcome to <span className="brand-text">Mealchemy AI</span>
+      </h1>
+      <form onSubmit={submit} className="space-y-3 text-left">
         <input
           className="input-magic"
           placeholder="Email"

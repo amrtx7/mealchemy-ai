@@ -25,13 +25,24 @@ export default function NavBar() {
     <header className="sticky top-0 z-50 bg-[var(--surface)] border-b-[3px] border-black">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Main">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-3 md:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
-            <Link
-              to="/"
-              className="font-sans font-black text-xl sm:text-2xl theme-text shrink-0 tracking-tight hover:opacity-90 transition-opacity"
-            >
-              Mealchemy Ai
-            </Link>
+          <Link
+            to="/"
+            className="font-sans font-black text-xl sm:text-2xl theme-text shrink-0 tracking-tight hover:opacity-90 transition-opacity min-w-0"
+          >
+            Mealchemy Ai
+          </Link>
+
+          <div className="hidden md:flex flex-1 justify-center px-2">
+            <div className="flex items-center gap-2 lg:gap-3">
+              {links.map(([label, to]) => (
+                <NavLink key={to} to={to} className={linkClass}>
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               type="button"
               className="theme-switch theme-switch--compact shrink-0"
@@ -55,19 +66,6 @@ export default function NavBar() {
                 )}
               </div>
             </button>
-          </div>
-
-          <div className="hidden md:flex flex-1 justify-center px-2">
-            <div className="flex items-center gap-2 lg:gap-3">
-              {links.map(([label, to]) => (
-                <NavLink key={to} to={to} className={linkClass}>
-                  {label}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {user && (
               <button
                 type="button"
