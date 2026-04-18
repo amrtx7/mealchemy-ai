@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Fraunces:ital,opsz,wght@0,9..144,200..900;1,9..144,600;1,9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -309,4 +309,36 @@ h1, h2, h3, h4 {
 
 [data-theme="dark"] .theme-switch {
   background: var(--surface-raised);
+}
+
+/* Smaller theme toggle (NavBar, next to logo) */
+.theme-switch.theme-switch--compact {
+  height: 1.375rem;
+  width: 2.25rem;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 0 #000000;
+}
+
+.theme-switch.theme-switch--compact:hover {
+  box-shadow: 1px 1px 0 0 #000000;
+}
+
+[data-theme="dark"] .theme-switch.theme-switch--compact {
+  box-shadow: 2px 2px 0 0 #d4f94a;
+}
+
+[data-theme="dark"] .theme-switch.theme-switch--compact:hover {
+  box-shadow: 1px 1px 0 0 #d4f94a;
+}
+
+.theme-switch.theme-switch--compact .theme-switch-thumb {
+  left: 2px;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-width: 2px;
+  border-radius: 3px;
+}
+
+[data-theme="dark"] .theme-switch.theme-switch--compact .theme-switch-thumb {
+  transform: translate(0.95rem) translateY(-50%);
 }

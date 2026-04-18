@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NavBar from "./components/NavBar";
+import PageDecor from "./components/PageDecor";
 import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
 import Meals from "./pages/Meals";
@@ -10,11 +11,17 @@ import History from "./pages/History";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
+const DECOR_BOOST_PATHS = new Set(["/meals", "/ingredients", "/cart", "/dashboard", "/history"]);
+
 export default function App() {
+  const { pathname } = useLocation();
+  const decorBoost = DECOR_BOOST_PATHS.has(pathname);
+
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageDecor boost={decorBoost} />
       <NavBar />
-      <main className="px-4 pb-10">
+      <main className="relative z-10 px-4 pb-10">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

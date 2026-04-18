@@ -54,11 +54,6 @@ export default function Home() {
 
   return (
     <div className="relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="abstract-circle w-96 h-96 -top-20 -left-20 animate-drift"></div>
-      <div className="abstract-circle w-80 h-80 top-1/2 -right-20 animate-float" style={{ animationDelay: '2s' }}></div>
-      <div className="abstract-circle w-64 h-64 bottom-10 left-1/4 animate-drift" style={{ animationDelay: '4s' }}></div>
-
       {/* Floating Food Elements (Inspired by Indian Cuisine) */}
       <img
         src="saras.png"
@@ -80,38 +75,8 @@ export default function Home() {
       />
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
-        <h1 className="max-w-5xl mx-auto mb-12 text-center text-[var(--text)] px-1">
-          <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.06]">
-            <span className="font-display text-[var(--accent-warm)] not-italic tracking-[0.02em] [text-shadow:3px_3px_0_#000] md:inline-block md:-rotate-1">
-              Transforming
-            </span>{" "}
-            <span className="font-sans font-bold tracking-tight">how you plan</span>{" "}
-            <span className="relative inline-block align-middle">
-              <span
-                aria-hidden
-                className="absolute inset-0 -z-10 translate-x-1 translate-y-1 rounded-md bg-black md:rounded-lg"
-              />
-              <span className="relative inline-block rounded-md border-[3px] border-black bg-[var(--surface-raised)] px-2 py-0.5 md:px-3 md:py-1 font-sans text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight shadow-neo-sm md:rotate-1">
-                meals
-              </span>
-            </span>
-          </span>
-          <span className="mt-3 block text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-sans font-black leading-snug tracking-tight">
-            <span className="font-semibold text-[var(--text-muted)]">and make </span>
-            <span className="font-editorial italic font-semibold text-[var(--accent)] text-[1.22em] sm:text-[1.18em] md:text-[1.12em] lg:text-[1.08em]">
-              smarter
-            </span>
-            <span className="font-semibold text-[var(--text-muted)]"> </span>
-            <span className="relative inline-block">
-              food
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -bottom-1 left-0 right-0 h-2 bg-[var(--accent-warm)] opacity-90 [clip-path:polygon(0_40%,100%_0,100%_100%,0_100%)]"
-              />
-            </span>
-            <span> decisions</span>
-            <span className="font-display text-[var(--accent-warm)] not-italic [text-shadow:2px_2px_0_#000]">.</span>
-          </span>
+        <h1 className="font-script text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold text-[var(--text)] max-w-5xl mx-auto leading-snug mb-12">
+          Transforming how you plan meals and make smarter food decisions.
         </h1>
 
         <div className="mb-24">
