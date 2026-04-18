@@ -14,6 +14,8 @@ export default {
         sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         serif: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         script: ['"Dancing Script"', 'cursive'],
+        great: ['"Great Vibes"', 'cursive'],
+        elegant: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
       boxShadow: {
         neo: '4px 4px 0 0 #000000',
