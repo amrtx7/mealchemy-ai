@@ -13,6 +13,8 @@ export default {
       fontFamily: {
         sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         serif: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        display: ['"Bungee"', 'system-ui', 'sans-serif'],
+        editorial: ['"Fraunces"', 'Georgia', 'serif'],
       },
       boxShadow: {
         neo: '4px 4px 0 0 #000000',
