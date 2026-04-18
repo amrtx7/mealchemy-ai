@@ -16,7 +16,12 @@ export const refreshSchema = z.object({
 });
 
 export const generateMealsSchema = z.object({
-  query: z.string().trim().min(5),
+  query: z.string().trim().min(1, "Query is required"),
+  cuisine: z.string().optional(),
+  mealType: z.string().optional(),
+  diet: z.string().optional(),
+  budget: z.number().nullable().optional(),
+  protein: z.boolean().optional(),
 });
 
 export const saveMealPlanSchema = z.object({
@@ -24,6 +29,10 @@ export const saveMealPlanSchema = z.object({
   constraints: z
     .object({
       budget: z.number().nullable().optional(),
+      cuisine: z.string().optional(),
+      mealType: z.string().optional(),
+      diet: z.string().optional(),
+      protein: z.boolean().optional(),
       servings: z.number().optional(),
       dietType: z.string().optional(),
     })
@@ -32,6 +41,8 @@ export const saveMealPlanSchema = z.object({
     .array(
       z.object({
         meal: z.string().min(1),
+        cuisine: z.string().optional(),
+        mealType: z.string().optional(),
         ingredients: z.array(z.string().min(1)),
       })
     )
@@ -41,13 +52,24 @@ export const saveMealPlanSchema = z.object({
       z.object({
         name: z.string(),
         amount: z.number().min(1),
-        unit: z.enum(["g", "mg"]),
+        unit: z.enum(["g", "mg", "ml", "pc", "doz", "tabs", "caps", "sachet"]),
         price: z.number().min(0),
         store: z.string(),
+        productName: z.string().optional(),
+        packageLabel: z.string().optional(),
+        available: z.boolean().optional(),
+        unavailableReason: z.string().optional(),
+        priority: z.enum(["high", "optional"]).optional(),
+        priorityLabel: z.string().optional(),
+        reason: z.string().optional(),
       })
     )
     .optional(),
   totalCost: z.number().min(0).optional(),
+});
+
+export const getIngredientsSchema = z.object({
+  dishes: z.array(z.string().min(1)).min(1),
 });
 
 export const optimizeCartSchema = z.object({

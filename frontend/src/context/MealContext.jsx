@@ -8,6 +8,8 @@ export function MealProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [constraints, setConstraints] = useState({});
   const [totalCost, setTotalCost] = useState(0);
+  const [cartSummary, setCartSummary] = useState(null);
+  const [ingredients, setIngredients] = useState([]); // merged raw ingredients before cart
 
   return (
     <MealContext.Provider
@@ -22,6 +24,10 @@ export function MealProvider({ children }) {
         setConstraints,
         totalCost,
         setTotalCost,
+        cartSummary,
+        setCartSummary,
+        ingredients,
+        setIngredients,
       }}
     >
       {children}

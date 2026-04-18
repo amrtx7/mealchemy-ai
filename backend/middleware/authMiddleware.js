@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { env } from "../config/env.js";
 
 export function requireAuth(req, res, next) {
   try {
@@ -6,7 +7,7 @@ export function requireAuth(req, res, next) {
     if (!token) {
       return res.status(401).json({ message: "Unauthorized: missing token" });
     }
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, env.jwtSecret);
     req.user = { id: payload.id };
     return next();
   } catch (error) {

@@ -5,39 +5,35 @@ import { useMeals } from "../context/MealContext";
 
 export default function Meals() {
   const navigate = useNavigate();
-  const [loadingCart, setLoadingCart] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selectedIndices, setSelectedIndices] = useState([]);
-  const { meals, setCart, setTotalCost, constraints, setMeals } = useMeals();
+  const { meals, setMeals, setIngredients, constraints } = useMeals();
 
   const toggleSelection = (idx) => {
-    if (selectedIndices.includes(idx)) {
-      setSelectedIndices(selectedIndices.filter(i => i !== idx));
-    } else {
-      setSelectedIndices([...selectedIndices, idx]);
-    }
+    setSelectedIndices(prev =>
+      prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
+    );
   };
 
-  const proceedToCart = async () => {
+  const proceedToIngredients = async () => {
     if (selectedIndices.length === 0) return;
-    setLoadingCart(true);
+    setLoading(true);
+    setError("");
     try {
       const selectedMeals = selectedIndices.map(idx => meals[idx]);
-      const allIngredients = selectedMeals.flatMap(meal => meal.ingredients || []);
-      
-      const payload = {
-        ingredients: allIngredients,
-        constraints
-      };
-      
-      const { data } = await api.post("/cart/optimize", payload);
+      // Extract dish names to send to the ingredient conversion API
+      const dishes = selectedMeals.map(m => m.meal).filter(Boolean);
+
+      const { data } = await api.post("/meal/ingredients", { dishes });
       setMeals(selectedMeals);
-      setCart(data.cartItems || []);
-      setTotalCost(data.totalCost || 0);
-      navigate("/cart");
-    } catch (error) {
-      console.error("Failed to optimize cart", error);
+      setIngredients(data.ingredients || []);
+      navigate("/ingredients");
+    } catch (err) {
+      setError("Failed to fetch ingredients. Please try again.");
+      console.error("Ingredient fetch error:", err);
     } finally {
-      setLoadingCart(false);
+      setLoading(false);
     }
   };
 
@@ -90,13 +86,28 @@ export default function Meals() {
         })}
       </div>
       
-      <div className="mt-16 flex justify-center">
+      <div className="mt-16 flex flex-col items-center gap-4">
+        {error && (
+          <p className="text-red-500 font-medium bg-red-50 px-6 py-3 rounded-2xl border border-red-200">
+            {error}
+          </p>
+        )}
         <button
           className="btn-primary w-full md:w-auto px-12 py-4 text-lg"
-          onClick={proceedToCart}
-          disabled={loadingCart || selectedIndices.length === 0}
+          onClick={proceedToIngredients}
+          disabled={loading || selectedIndices.length === 0}
         >
-          {loadingCart ? "Calculating Totals..." : "Proceed to Cart ✨"}
+          {loading ? (
+            <span className="flex items-center gap-3">
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Analysing Dishes...
+            </span>
+          ) : (
+            `Select Ingredients ✨ (${selectedIndices.length} dish${selectedIndices.length !== 1 ? "es" : ""} selected)`
+          )}
         </button>
       </div>
     </section>

@@ -4,8 +4,50 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --bg: #f7efe1;
+    --bg-strong: #efe0c6;
+    --surface: #fffaf0;
+    --surface-raised: #ffffff;
+    --surface-muted: #ead9ba;
+    --border: #c6a879;
+    --border-soft: #dbc397;
+    --text: #12372f;
+    --text-muted: #5b6f61;
+    --primary: #12372f;
+    --primary-hover: #0d2b25;
+    --accent: #b8651d;
+    --accent-strong: #8f4611;
+    --danger: #b3261e;
+    --shadow: 0 18px 45px rgba(37, 27, 12, 0.12);
+  }
+
+  [data-theme="dark"] {
+    --bg: #101815;
+    --bg-strong: #17241f;
+    --surface: #1d2a24;
+    --surface-raised: #25372f;
+    --surface-muted: #31483d;
+    --border: #64806e;
+    --border-soft: #425a4d;
+    --text: #f4ead8;
+    --text-muted: #c7bda7;
+    --primary: #f0d7a0;
+    --primary-hover: #f7e5bd;
+    --accent: #d99345;
+    --accent-strong: #efb768;
+    --danger: #ff8b7f;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  }
+}
+
 body {
-  @apply bg-[#FDFBF6] text-[#164E40] min-h-screen font-sans selection:bg-[#E79B48] selection:text-white;
+  @apply min-h-screen font-sans selection:text-white;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34rem),
+    linear-gradient(135deg, var(--bg), var(--bg-strong));
+  color: var(--text);
 }
 
 h1, h2, h3, h4 {
@@ -14,37 +56,143 @@ h1, h2, h3, h4 {
 
 .card {
   @apply rounded-xl border;
-  background: #F4EFE5;
-  border-color: #E8DDCA;
+  background: var(--surface);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow);
 }
 
 .card-soft {
   @apply rounded-xl border transition-all duration-300;
-  background: #FDFBF6;
-  border-color: #E8DDCA;
+  background: var(--surface-raised);
+  border-color: var(--border-soft);
 }
 
 .input-magic {
   @apply w-full rounded-2xl border px-5 py-4 outline-none transition-all duration-300;
-  background: #FDFBF6;
-  border-color: #E8DDCA;
-  color: #164E40;
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .input-magic:focus {
-  border-color: #164E40;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .btn-primary {
-  @apply bg-[#164E40] hover:bg-[#113C31] text-white font-serif font-medium px-6 py-3 rounded-full transition-transform duration-300 shadow-md transform hover:-translate-y-0.5;
+  @apply text-white font-serif font-medium px-6 py-3 rounded-full transition-transform duration-300 shadow-md transform hover:-translate-y-0.5;
+  background: var(--primary);
+  color: var(--bg);
 }
 
 .btn-secondary {
-  @apply border border-[#164E40] text-[#164E40] hover:bg-[#164E40] hover:text-white font-serif font-medium px-6 py-3 rounded-full transition-all duration-300;
+  @apply border font-serif font-medium px-6 py-3 rounded-full transition-all duration-300;
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+}
+
+.btn-secondary:hover {
+  background: var(--primary);
+  color: var(--bg);
 }
 
 .brand-text {
-  @apply text-[#164E40] font-serif font-bold tracking-tight;
+  @apply font-serif font-bold tracking-tight;
+  color: var(--text);
+}
+
+.theme-surface {
+  background: var(--surface);
+  border-color: var(--border-soft);
+  color: var(--text);
+}
+
+.theme-raised {
+  background: var(--surface-raised);
+  border-color: var(--border-soft);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.theme-muted {
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.theme-hero {
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 72%, #000));
+  color: var(--bg);
+}
+
+.theme-text {
+  color: var(--text);
+}
+
+.theme-muted-text {
+  color: var(--text-muted);
+}
+
+.theme-accent {
+  color: var(--accent);
+}
+
+.theme-accent-bg {
+  background: var(--accent);
+  color: #101815;
+}
+
+/* Compatibility bridge for existing Tailwind arbitrary hex classes. */
+[class*="bg-[#FDFBF6]"],
+[class*="bg-[#fdfbf6]"] {
+  background-color: var(--surface-raised) !important;
+}
+
+[class*="bg-[#F4EFE5]"],
+[class*="bg-[#f4efe5]"] {
+  background-color: var(--surface-muted) !important;
+}
+
+[class*="bg-[#E8DDCA]"],
+[class*="bg-[#e8ddca]"] {
+  background-color: var(--border-soft) !important;
+}
+
+[class*="bg-[#eeae5c]"],
+[class*="bg-[#E79B48]"],
+[class*="bg-[#e79b48]"] {
+  background-color: var(--accent) !important;
+}
+
+[class*="bg-[#164E40]"],
+[class*="bg-[#164e40]"] {
+  background-color: var(--primary) !important;
+}
+
+[class*="text-[#164E40]"],
+[class*="text-[#164e40]"] {
+  color: var(--text) !important;
+}
+
+[class*="text-[#E79B48]"],
+[class*="text-[#e79b48]"] {
+  color: var(--accent) !important;
+}
+
+[class*="border-[#E8DDCA]"],
+[class*="border-[#e8ddca]"] {
+  border-color: var(--border-soft) !important;
+}
+
+[class*="border-[#164E40]"],
+[class*="border-[#164e40]"] {
+  border-color: var(--primary) !important;
+}
+
+[data-theme="dark"] [class*="bg-[#164E40]"][class*="text-white"],
+[data-theme="dark"] [class*="bg-[#164e40]"][class*="text-white"] {
+  color: var(--bg) !important;
 }
 
 /* Animations */
@@ -83,3 +231,25 @@ h1, h2, h3, h4 {
   background: radial-gradient(circle, #E79B48 0%, rgba(231,155,72,0) 70%);
 }
 
+/* Theme Toggle */
+.theme-switch {
+  @apply relative inline-flex items-center h-6 w-11 rounded-full cursor-pointer transition-all duration-300;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+}
+
+.theme-switch-thumb {
+  @apply absolute left-0.5 w-[1.125rem] h-[1.125rem] rounded-full transition-all duration-300 flex items-center justify-center;
+  background: var(--primary);
+  color: var(--bg);
+}
+
+[data-theme="dark"] .theme-switch-thumb {
+  transform: translateX(1.25rem);
+  background: var(--accent);
+  color: #101815;
+}
+
+[data-theme="dark"] .theme-switch {
+  background: var(--surface-raised);
+}

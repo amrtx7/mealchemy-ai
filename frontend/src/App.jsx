@@ -3,6 +3,7 @@ import NavBar from "./components/NavBar";
 import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
 import Meals from "./pages/Meals";
+import IngredientSelection from "./pages/IngredientSelection";
 import Cart from "./pages/Cart";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
@@ -30,6 +31,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Meals />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ingredients"
+            element={
+              <PrivateRoute>
+                <IngredientSelection />
               </PrivateRoute>
             }
           />

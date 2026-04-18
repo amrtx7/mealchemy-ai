@@ -1,13 +1,72 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useMeals } from "../context/MealContext";
 
+const PERIODS = [
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+  { key: "year", label: "This Year" },
+  { key: "all", label: "All Time" },
+];
+
+const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
+
+function startOfWeek(date) {
+  const next = new Date(date);
+  const day = next.getDay();
+  const diff = next.getDate() - day + (day === 0 ? -6 : 1);
+  next.setDate(diff);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function startOfPeriod(period) {
+  const now = new Date();
+  if (period === "week") return startOfWeek(now);
+  if (period === "month") return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (period === "year") return new Date(now.getFullYear(), 0, 1);
+  return null;
+}
+
+function mealTypeOf(meal, fallback = "") {
+  const value = String(meal?.mealType || fallback || "").toLowerCase();
+  if (value.includes("breakfast")) return "Breakfast";
+  if (value.includes("lunch")) return "Lunch";
+  if (value.includes("dinner")) return "Dinner";
+  if (value.includes("snack")) return "Snack";
+  return "Meal";
+}
+
+function groupMealsByType(plans) {
+  const grouped = { Breakfast: [], Lunch: [], Dinner: [], Snack: [], Meal: [] };
+
+  for (const plan of plans) {
+    const fallbackType = plan?.constraints?.mealType;
+    for (const meal of plan.meals || []) {
+      const type = mealTypeOf(meal, fallbackType);
+      grouped[type] = grouped[type] || [];
+      grouped[type].push({ ...meal, plan });
+    }
+  }
+
+  return grouped;
+}
+
+function formatDate(value) {
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function History() {
   const [history, setHistory] = useState([]);
+  const [period, setPeriod] = useState("week");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { setCart, setTotalCost, setMeals } = useMeals();
+  const { setCart, setTotalCost, setMeals, setCartSummary } = useMeals();
 
   useEffect(() => {
     async function load() {
@@ -18,58 +77,160 @@ export default function History() {
         setError(err.response?.data?.message || "Failed to load history");
       }
     }
+
     load();
   }, []);
+
+  const filteredHistory = useMemo(() => {
+    const start = startOfPeriod(period);
+    if (!start) return history;
+    return history.filter((entry) => new Date(entry.createdAt) >= start);
+  }, [history, period]);
+
+  const grouped = useMemo(() => groupMealsByType(filteredHistory), [filteredHistory]);
+  const totalCost = filteredHistory.reduce((sum, entry) => sum + (entry.totalCost || 0), 0);
+  const totalMeals = filteredHistory.reduce((sum, entry) => sum + (entry.meals?.length || 0), 0);
 
   const viewCart = (entry) => {
     setCart(entry.cart || []);
     setTotalCost(entry.totalCost || 0);
     setMeals(entry.meals || []);
+    setCartSummary(null);
     navigate("/cart");
   };
 
   return (
-    <section className="max-w-6xl mx-auto my-16 px-6">
-      <div className="text-center mb-16">
-        <h1 className="text-5xl font-serif text-[#164E40] mb-4">Meal History ✨</h1>
-        <p className="text-[#164E40] opacity-80 text-lg">Your past magical meal plans and grocery trips.</p>
+    <section className="max-w-6xl mx-auto my-10 px-6 space-y-8">
+      <div className="theme-raised p-8 rounded-[2rem] border">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] theme-accent mb-3">
+              Saved Plans
+            </p>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold theme-text">
+              Meal History
+            </h1>
+            <p className="theme-muted-text mt-3 max-w-2xl">
+              Browse your plans by week, month, year, and meal type.
+            </p>
+          </div>
+
+          <div className="flex gap-2 theme-muted p-1 rounded-full border overflow-x-auto">
+            {PERIODS.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setPeriod(item.key)}
+                className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                  period === item.key ? "btn-primary" : "theme-muted-text hover:theme-text"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mt-8">
+          <div className="theme-hero rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-widest opacity-75">Plans</p>
+            <p className="text-3xl font-serif font-bold">{filteredHistory.length}</p>
+          </div>
+          <div className="theme-muted rounded-2xl p-4 border">
+            <p className="text-xs uppercase tracking-widest theme-muted-text">Meals</p>
+            <p className="text-3xl font-serif font-bold theme-text">{totalMeals}</p>
+          </div>
+          <div className="theme-muted rounded-2xl p-4 border">
+            <p className="text-xs uppercase tracking-widest theme-muted-text">Spend</p>
+            <p className="text-3xl font-serif font-bold theme-accent">₹{totalCost}</p>
+          </div>
+        </div>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center border border-red-200 mb-6">{error}</div>}
-      
-      {history.length === 0 && !error ? (
-        <div className="bg-[#FDFBF6] p-16 rounded-[2.5rem] border border-[#E8DDCA] text-center shadow-sm">
-          <p className="text-[#164E40]/70 font-medium text-lg">No meal plans saved yet. Start planning!</p>
+      {error && (
+        <div className="p-4 rounded-xl text-center border theme-raised" style={{ color: "var(--danger)" }}>
+          {error}
+        </div>
+      )}
+
+      {filteredHistory.length === 0 && !error ? (
+        <div className="theme-raised p-16 rounded-[2.5rem] border text-center">
+          <p className="theme-muted-text font-medium text-lg">No meal plans found for this period.</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {history.map((entry) => (
-            <article key={entry._id} className="bg-[#FDFBF6] p-8 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-start md:items-center border border-[#E8DDCA] shadow-sm hover:border-[#164E40]/20 transition-all group">
-              <div className="mb-6 md:mb-0">
-                <h3 className="text-2xl font-serif font-bold text-[#164E40] mb-2">{entry.query || "Generated Plan"}</h3>
-                <p className="text-sm font-medium text-[#164E40]/60 mb-5">{new Date(entry.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {(entry.meals || []).map((meal, idx) => (
-                    <span key={`${entry._id}-${idx}`} className="px-4 py-1.5 bg-[#F4EFE5] text-[#164E40] rounded-full text-xs font-bold border border-[#E8DDCA] transition-colors group-hover:bg-[#eeae5c] group-hover:border-[#eeae5c] group-hover:text-[#164E40]">
+        <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-8">
+          <div className="theme-raised p-6 rounded-[2rem] border">
+            <h2 className="text-3xl font-serif font-bold theme-text mb-6">
+              Meal Timeline
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {[...MEAL_TYPES, "Meal"].map((type) => {
+                const meals = grouped[type] || [];
+                if (meals.length === 0) return null;
+
+                return (
+                  <div key={type} className="theme-muted rounded-2xl p-5 border">
+                    <h3 className="font-serif text-2xl font-bold theme-text mb-4">
+                      {type === "Meal" ? "Other Meals" : type}
+                    </h3>
+                    <div className="space-y-3">
+                      {meals.map((meal, idx) => (
+                        <div key={`${type}-${meal.meal}-${idx}`} className="theme-raised rounded-xl p-3 border">
+                          <p className="font-bold theme-text leading-tight">{meal.meal}</p>
+                          <p className="text-xs theme-muted-text mt-1">
+                            {formatDate(meal.plan.createdAt)} · ₹{meal.plan.totalCost || 0}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {filteredHistory.map((entry) => (
+              <article
+                key={entry._id}
+                className="theme-raised p-5 rounded-[1.5rem] border transition-all"
+              >
+                <div className="flex justify-between gap-4 mb-4">
+                  <div>
+                    <h3 className="text-xl font-serif font-bold theme-text">
+                      {entry.query || "Generated Plan"}
+                    </h3>
+                    <p className="text-xs font-medium theme-muted-text mt-1">
+                      {new Date(entry.createdAt).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-serif font-bold theme-accent">
+                    ₹{entry.totalCost || 0}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {(entry.meals || []).slice(0, 5).map((meal, idx) => (
+                    <span
+                      key={`${entry._id}-${idx}`}
+                      className="px-3 py-1 theme-muted rounded-full text-xs font-bold border"
+                    >
                       {meal.meal}
                     </span>
                   ))}
                 </div>
-              </div>
-              
-              <div className="flex flex-col items-start md:items-end w-full md:w-auto md:min-w-[150px]">
-                <p className="text-[#164E40]/60 text-xs font-bold uppercase tracking-widest mb-1">Total Cost</p>
-                <p className="text-3xl font-serif font-bold text-[#E79B48] mb-5">₹{entry.totalCost || 0}</p>
-                <button 
+
+                <button
                   onClick={() => viewCart(entry)}
-                  className="btn-secondary whitespace-nowrap w-full md:w-auto py-3 px-8 text-sm"
+                  className="btn-secondary whitespace-nowrap w-full py-3 px-8 text-sm"
                 >
-                  View Cart 🛒
+                  View Cart
                 </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
         </div>
       )}
     </section>

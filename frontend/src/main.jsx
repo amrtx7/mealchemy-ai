@@ -5,15 +5,18 @@ import App from "./App";
 import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { MealProvider } from "./context/MealContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <MealProvider>
-          <App />
-        </MealProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MealProvider>
+            <App />
+          </MealProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

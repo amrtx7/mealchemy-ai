@@ -7,7 +7,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { query, setQuery, setMeals, setCart, setConstraints, setTotalCost } = useMeals();
+  const { query, setQuery, setMeals, setCart, setConstraints, setTotalCost, setCartSummary } = useMeals();
 
   const [filters, setFilters] = useState({
     cuisine: "Indian",
@@ -43,6 +43,7 @@ export default function Home() {
       setCart(data.cart || []);
       setConstraints(data.constraints || {});
       setTotalCost(data.totalCost || 0);
+      setCartSummary(null);
       navigate("/meals");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to generate meals");

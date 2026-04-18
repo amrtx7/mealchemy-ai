@@ -1,12 +1,13 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { env } from "../config/env.js";
 
 function signAccessToken(userId) {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ id: userId }, env.jwtSecret, { expiresIn: "15m" });
 }
 
 function signRefreshToken(userId) {
-  return jwt.sign({ id: userId, type: "refresh" }, process.env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id: userId, type: "refresh" }, env.jwtRefreshSecret, { expiresIn: "7d" });
 }
 
 export async function signup(req, res) {
@@ -61,7 +62,7 @@ export async function login(req, res) {
 export async function refresh(req, res) {
   try {
     const { refreshToken } = req.body;
-    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const payload = jwt.verify(refreshToken, env.jwtRefreshSecret);
     if (payload.type !== "refresh") {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
@@ -85,7 +86,7 @@ export async function refresh(req, res) {
 export async function logout(req, res) {
   try {
     const { refreshToken } = req.body;
-    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const payload = jwt.verify(refreshToken, env.jwtRefreshSecret);
     const user = await User.findById(payload.id).select("+refreshTokens");
     if (user) {
       user.refreshTokens = (user.refreshTokens || []).filter((t) => t !== refreshToken);
