@@ -63,21 +63,23 @@ h1, h2, h3, h4 {
 }
 
 .card {
-  @apply border-brutal border-black;
+  border: 3px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .card-soft {
-  @apply border-brutal border-black transition-transform duration-150;
+  @apply transition-transform duration-150;
+  border: 3px solid var(--border);
   background: var(--surface-raised);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .input-magic {
-  @apply w-full border-brutal border-black px-4 py-3 outline-none transition-shadow duration-150 font-semibold;
+  @apply w-full px-4 py-3 outline-none transition-shadow duration-150 font-semibold;
+  border: 3px solid var(--border);
   background: var(--surface-raised);
   color: var(--text);
   border-radius: var(--radius-sm);
@@ -271,7 +273,8 @@ h1, h2, h3, h4 {
 }
 
 .abstract-circle {
-  @apply absolute pointer-events-none border-brutal border-black opacity-50;
+  @apply absolute pointer-events-none opacity-50;
+  border: 3px solid var(--border);
   background: var(--accent-warm);
   border-radius: 9999px;
   box-shadow: var(--shadow);
