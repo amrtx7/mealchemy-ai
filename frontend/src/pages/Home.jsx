@@ -87,13 +87,13 @@ export default function Home() {
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
         <h1 className="mx-auto max-w-5xl mb-12 text-[var(--text)]">
-          <span className="block font-great text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] text-[#ff0000] dark:text-[#ff4444] [text-shadow:3px_3px_0_#000] -rotate-1">
+          <span className="block font-great text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] text-[#b80000] dark:text-[#e02020] [text-shadow:3px_3px_0_#000] -rotate-1">
             Transforming
           </span>
           <span className="mt-3 block font-script text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-snug tracking-wide">
             how you plan meals and make{" "}
             <span
-              className="inline-block font-elegant italic font-bold text-[1.05em] md:text-[1.08em] align-baseline text-[#ffb3b3] dark:text-[#ffabab] [-webkit-text-stroke:2px_#000000] [paint-order:stroke_fill]"
+              className="inline-block font-elegant italic font-bold text-[1.05em] md:text-[1.08em] align-baseline text-[#d97070] dark:text-[#e88888] [-webkit-text-stroke:2px_#000000] [paint-order:stroke_fill]"
             >
               smarter
             </span>{" "}
