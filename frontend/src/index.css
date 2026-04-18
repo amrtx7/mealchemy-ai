@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    background-color: var(--page-bg);
+  }
+
   :root {
     --page-bg: #c4ef2e;
     --bg: #c4ef2e;

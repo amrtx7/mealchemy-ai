@@ -53,7 +53,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none">
       {/* Bold decorative circles (neobrutal) */}
       <div className="abstract-circle w-96 h-96 -top-20 -left-20 animate-drift" />
       <div
@@ -122,7 +122,7 @@ export default function Home() {
 
       <section
         id="planner"
-        className="relative w-screen left-1/2 -translate-x-1/2 bg-[#ffb703] py-24 md:py-32 px-6 sm:px-8 overflow-hidden border-y-[3px] border-black"
+        className="relative w-full bg-[#ffb703] py-24 md:py-32 px-6 sm:px-8 overflow-hidden border-y-[3px] border-black"
       >
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <div>
