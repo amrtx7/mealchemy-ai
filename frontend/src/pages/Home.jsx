@@ -86,46 +86,23 @@ export default function Home() {
       />
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
-        <p className="mb-5 font-sans text-[10px] sm:text-xs font-black uppercase tracking-[0.42em] text-[var(--text-muted)]">
-          Crafted for curious cooks
-        </p>
-
-        <div className="relative mx-auto max-w-5xl mb-12 px-4 sm:px-8 py-8 sm:py-10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-[2rem] border-[3px] border-black/80 bg-[var(--surface-raised)]/35 shadow-neo-sm dark:bg-[var(--surface)]/20"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-2 left-1/2 h-2 w-24 -translate-x-1/2 rounded-full bg-[var(--accent-warm)] border-2 border-black"
-          />
-
-          <h1 className="relative text-[var(--text)]">
-            <span className="block font-great text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] text-[var(--accent-warm)] [text-shadow:3px_3px_0_#000] -rotate-1">
-              Transforming
+        <h1 className="mx-auto max-w-5xl mb-12 text-[var(--text)]">
+          <span className="block font-great text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] [text-shadow:3px_3px_0_#000] -rotate-1">
+            <span className="text-[var(--accent)]">Transform</span>
+            <span className="text-[var(--accent-warm)]">ing</span>
+          </span>
+          <span className="mt-3 block font-script text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-snug tracking-wide">
+            how you plan meals and make{" "}
+            <span className="relative inline-block font-elegant italic font-bold text-[1.05em] text-[var(--accent)] md:text-[1.08em]">
+              smarter
+              <span className="pointer-events-none absolute -bottom-0.5 left-1 right-1 h-1 rounded-sm bg-[var(--accent-warm)]/85 border border-black/40" />
+            </span>{" "}
+            <span className="font-elegant italic font-semibold text-[0.98em] text-[var(--text)] md:text-[1.02em]">
+              food decisions
             </span>
-            <span className="mt-3 block font-script text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-snug tracking-wide">
-              how you plan meals and make{" "}
-              <span className="relative inline-block font-elegant italic font-bold text-[1.05em] text-[var(--accent)] md:text-[1.08em]">
-                smarter
-                <span className="pointer-events-none absolute -bottom-0.5 left-1 right-1 h-1 rounded-sm bg-[var(--accent-warm)]/85 border border-black/40" />
-              </span>{" "}
-              <span className="font-elegant italic font-semibold text-[0.98em] text-[var(--text)] md:text-[1.02em]">
-                food decisions
-              </span>
-              <span className="font-great text-[var(--accent-warm)] [text-shadow:2px_2px_0_#000]">.</span>
-            </span>
-          </h1>
-
-          <div
-            aria-hidden
-            className="pointer-events-none mt-6 flex items-center justify-center gap-3 text-black/40 dark:text-white/30"
-          >
-            <span className="h-px w-10 bg-current" />
-            <span className="font-elegant text-lg italic">✦</span>
-            <span className="h-px w-10 bg-current" />
-          </div>
-        </div>
+            <span className="font-great text-[var(--accent-warm)] [text-shadow:2px_2px_0_#000]">.</span>
+          </span>
+        </h1>
 
         <div className="mb-24">
           <a href="#planner" className="btn-primary inline-flex items-center gap-3 text-lg md:text-xl px-10 py-4 md:px-12 md:py-5">
