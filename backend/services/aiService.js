@@ -3,10 +3,16 @@ import { generateText, isAiConfigured } from "./aiProviderService.js";
 
 function fallbackMeals() {
   return [
-    { meal: "Vegetable Rice Bowl", ingredients: ["rice", "onion", "tomato"] },
-    { meal: "Paneer Stir Fry", ingredients: ["paneer", "onion", "tomato"] },
-    { meal: "Tomato Rice", ingredients: ["rice", "tomato", "onion"] },
+    { meal: "Vegetable Rice Bowl", mealName: "Vegetable Rice Bowl", ingredients: ["rice", "onion", "tomato"], estimatedCost: 120, proteinLevel: "medium", cookingTime: "25 minutes" },
+    { meal: "Paneer Stir Fry", mealName: "Paneer Stir Fry", ingredients: ["paneer", "onion", "tomato"], estimatedCost: 180, proteinLevel: "high", cookingTime: "20 minutes" },
+    { meal: "Tomato Rice", mealName: "Tomato Rice", ingredients: ["rice", "tomato", "onion"], estimatedCost: 100, proteinLevel: "low", cookingTime: "30 minutes" },
   ];
+}
+
+function label(value) {
+  if (!value) return "None";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
+  return String(value).replace(/_/g, " ");
 }
 
 /**
@@ -35,24 +41,40 @@ export async function generateMeals(queryText, filters = {}, options = { min: 3,
   console.log("[AI-DEBUG] AI config:", getAiConfigFingerprint());
 
   // Build context-aware filter lines
-  const filterLines = [
-    filters.cuisine  ? `- Cuisine style: ${filters.cuisine}` : "",
-    filters.mealType ? `- Meal type: ${filters.mealType}` : "",
-    filters.diet     ? `- Dietary preference: ${filters.diet}` : "",
-    filters.budget   ? `- Budget: ₹${filters.budget}` : "",
-    filters.protein  ? `- Prioritize high-protein ingredients` : "",
-  ].filter(Boolean).join("\n");
+  const prompt = `Generate exactly ${maxCount} meal options based on the following requirements:
 
-  const prompt = `You are an expert meal planning assistant.
+User Request: ${text}
+Meal Type: ${label(filters.mealType)}
+Diet: ${label(filters.diet)}
+Cuisine Preferences: ${label(filters.cuisine)}
+Budget: ${filters.budget ? `Under ₹${filters.budget}` : "No fixed budget"}
+Protein Preference: ${label(filters.protein)}
+Cooking Time: ${label(filters.cookingTime)}
+User Goal: ${label(filters.goal)}
+Allergies: ${label(filters.allergies)}
 
-User request: "${text}"
-${filterLines ? `\nConstraints:\n${filterLines}` : ""}
+Rules:
+- Each meal must match the diet and cuisine
+- Keep total ingredient cost within budget when a budget is provided
+- Prioritize high-protein ingredients when protein preference is high
+- Respect cooking time constraint
+- Avoid allergens completely
+- Meals should be realistic and commonly cooked
+- Use common English grocery ingredient names only
 
-Generate ${minCount} to ${maxCount} meal options that match the request and constraints.
-Each meal must have 4-6 realistic raw grocery ingredient names (not cooked items).
-
-Return STRICT JSON array only (no markdown, no explanation):
-[{"meal":"Meal Name","cuisine":"CuisineType","mealType":"Breakfast/Lunch/Dinner/Snack","ingredients":["item1","item2","item3"]}]`;
+Return STRICT JSON array only:
+[
+  {
+    "mealName": "",
+    "meal": "",
+    "cuisine": "",
+    "mealType": "",
+    "ingredients": [],
+    "estimatedCost": 0,
+    "proteinLevel": "high",
+    "cookingTime": "string"
+  }
+]`;
 
   try {
     const response = await generateText(prompt);
@@ -67,7 +89,11 @@ Return STRICT JSON array only (no markdown, no explanation):
       start !== -1 && end !== -1 && end > start
         ? normalized.slice(start, end + 1)
         : normalized;
-    const meals = JSON.parse(jsonText);
+    const meals = JSON.parse(jsonText).map((meal) => ({
+      ...meal,
+      meal: meal.meal || meal.mealName,
+      mealName: meal.mealName || meal.meal,
+    }));
 
     if (!Array.isArray(meals) || meals.length === 0) {
       return fallbackMeals();

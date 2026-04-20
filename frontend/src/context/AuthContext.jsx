@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
+    return data.user;
   };
 
   const signup = async (name, email, password) => {
@@ -23,6 +24,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
+    return data.user;
+  };
+
+  const updateUser = (nextUser) => {
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
+
+  const savePreferences = async (payload) => {
+    const { data } = await api.put("/auth/preferences", payload);
+    updateUser(data.user);
+    return data.user;
   };
 
   const logout = async () => {
@@ -41,7 +54,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: Boolean(user) }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, savePreferences, updateUser, isAuthenticated: Boolean(user) }}>
       {children}
     </AuthContext.Provider>
   );

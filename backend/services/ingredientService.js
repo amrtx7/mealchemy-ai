@@ -44,11 +44,30 @@ function toEnglishIngredientName(value) {
     .trim();
 }
 
+function label(value) {
+  if (!value) return "None";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
+  return String(value).replace(/_/g, " ");
+}
+
+function violatesAllergy(item, allergies = []) {
+  const lower = String(item).toLowerCase();
+  return allergies.some((allergy) => {
+    const value = String(allergy).toLowerCase();
+    if (!value || value === "none") return false;
+    if (value === "dairy") return /milk|paneer|curd|yogurt|cheese|butter|ghee|cream/.test(lower);
+    if (value === "nuts") return /nut|peanut|almond|cashew|walnut|pistachio/.test(lower);
+    if (value === "gluten") return /wheat|atta|maida|flour|bread|sooji|semolina/.test(lower);
+    if (value === "soy") return /soy|tofu/.test(lower);
+    return lower.includes(value);
+  });
+}
+
 /**
  * Use Gemini to convert an array of dish names into raw grocery ingredients.
  * Returns a map: { "Dish Name": ["ingredient1", "ingredient2", ...] }
  */
-export async function convertDishesToIngredients(dishes) {
+export async function convertDishesToIngredients(dishes, constraints = {}) {
   if (!Array.isArray(dishes) || dishes.length === 0) {
     return {};
   }
@@ -69,6 +88,11 @@ Rules:
 - Prefer names that can match supermarket products, such as "onion", "tomato", "paneer", "basmati rice", "turmeric powder"
 - Keep ingredient list realistic and minimal (5-8 items per dish max)
 - Do NOT include dish names as ingredients
+- Respect dietary constraints and allergies
+
+Diet: ${label(constraints.diet)}
+Allergies: ${label(constraints.allergies)}
+Cooking Time: ${label(constraints.cookingTime)}
 
 Dishes:
 ${dishList}
@@ -100,7 +124,10 @@ Return STRICT JSON only (no markdown, no explanation):
         (k) => k.trim().toLowerCase() === dish.trim().toLowerCase()
       );
       validated[dish] = Array.isArray(parsed[key])
-        ? parsed[key].map(toEnglishIngredientName).filter(Boolean)
+        ? parsed[key]
+            .map(toEnglishIngredientName)
+            .filter(Boolean)
+            .filter((item) => !violatesAllergy(item, constraints.allergies || []))
         : ["oil", "salt", "spices"];
     }
 
@@ -122,7 +149,7 @@ Return STRICT JSON only (no markdown, no explanation):
  * Merge ingredients from all dishes and remove duplicates.
  * Returns a sorted, deduplicated array of ingredient strings.
  */
-export function mergeIngredients(dishIngredientMap) {
+export function mergeIngredients(dishIngredientMap, constraints = {}) {
   const seen = new Set();
   const merged = [];
 
@@ -130,7 +157,7 @@ export function mergeIngredients(dishIngredientMap) {
     if (!Array.isArray(ingredients)) continue;
     for (const item of ingredients) {
       const normalized = toEnglishIngredientName(item);
-      if (normalized && !seen.has(normalized)) {
+      if (normalized && !violatesAllergy(normalized, constraints.allergies || []) && !seen.has(normalized)) {
         seen.add(normalized);
         merged.push(normalized);
       }

@@ -14,8 +14,8 @@ export default function Signup() {
     e.preventDefault();
     setError("");
     try {
-      await signup(name, email, password);
-      navigate("/");
+      const user = await signup(name, email, password);
+      navigate(user.onboardingCompleted ? "/" : "/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
     }

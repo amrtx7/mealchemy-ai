@@ -87,20 +87,20 @@ export default function Home() {
 
       <section className="max-w-7xl mx-auto mt-16 px-6 text-center relative z-10 animate-fade-in-up">
         <h1 className="mx-auto max-w-5xl mb-12 text-[var(--text)]">
-          <span className="block font-great text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] text-[#b80000] dark:text-[#e02020] [text-shadow:3px_3px_0_#000] -rotate-1">
+          <span className="block font-sans font-black text-[2.85rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] text-[#b80000] dark:text-[#e02020] [text-shadow:3px_3px_0_#000] -rotate-1">
             Transforming
           </span>
-          <span className="mt-3 block font-script text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-snug tracking-wide">
+          <span className="mt-3 block font-sans text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-snug tracking-wide">
             how you plan meals and make{" "}
             <span
-              className="inline-block font-elegant italic font-bold text-[1.05em] md:text-[1.08em] align-baseline text-[#d97070] dark:text-[#e88888] [-webkit-text-stroke:2px_#000000] [paint-order:stroke_fill]"
+              className="inline-block font-sans font-black text-[1.05em] md:text-[1.08em] align-baseline text-[#d97070] dark:text-[#e88888] [-webkit-text-stroke:1px_#000000] [paint-order:stroke_fill]"
             >
               smarter
             </span>{" "}
-            <span className="font-elegant italic font-semibold text-[0.98em] text-[var(--text)] md:text-[1.02em]">
+            <span className="font-sans font-extrabold text-[0.98em] text-[var(--text)] md:text-[1.02em]">
               food decisions
             </span>
-            <span className="font-great text-[var(--accent-warm)] [text-shadow:2px_2px_0_#000]">.</span>
+            <span className="font-sans text-[var(--accent-warm)] [text-shadow:2px_2px_0_#000]">.</span>
           </span>
         </h1>
 

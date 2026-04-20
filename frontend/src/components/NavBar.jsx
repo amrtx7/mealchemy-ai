@@ -17,7 +17,6 @@ export default function NavBar() {
     ["Home", "/"],
     ["Menu", "/meals"],
     ["Dashboard", "/dashboard"],
-    ["History", "/history"],
     ["Cart", "/cart"],
   ];
 
@@ -67,13 +66,22 @@ export default function NavBar() {
               </div>
             </button>
             {user && (
-              <button
-                type="button"
-                className="theme-text text-xs font-black uppercase tracking-widest border-[3px] border-black px-3 py-1.5 rounded-md bg-[var(--surface-raised)] shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-                onClick={logout}
-              >
-                Logout
-              </button>
+              <>
+                <Link
+                  to="/profile"
+                  className="h-10 w-10 rounded-full border-[3px] border-black bg-[var(--accent-warm)] shadow-neo-sm flex items-center justify-center font-black"
+                  title="Profile"
+                >
+                  {user.name?.charAt(0)?.toUpperCase() || "U"}
+                </Link>
+                <button
+                  type="button"
+                  className="theme-text text-xs font-black uppercase tracking-widest border-[3px] border-black px-3 py-1.5 rounded-md bg-[var(--surface-raised)] shadow-neo-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                  onClick={logout}
+                >
+                  Logout
+                </button>
+              </>
             )}
           </div>
         </div>

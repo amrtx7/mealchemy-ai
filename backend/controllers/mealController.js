@@ -1,18 +1,21 @@
 import MealPlan from "../models/MealPlan.js";
 import User from "../models/User.js";
 import { generateMeals } from "../services/aiService.js";
-import { parseConstraints } from "../services/parserService.js";
+import { mergeMealConstraints, parseMealQuery } from "../services/parserService.js";
 import { optimizeCart } from "../services/optimizationService.js";
 import { convertDishesToIngredients, mergeIngredients } from "../services/ingredientService.js";
 
 export async function generateMealPlan(req, res) {
   try {
-    const { query, cuisine, mealType, diet, budget, protein } = req.body;
+    const user = await User.findById(req.user.id);
+    const queryOverrides = parseMealQuery(query);
+    const constraints = mergeMealConstraints({
+      userPreferences: user?.preferences || {},
+      queryOverrides,
+      requestBody: req.body,
+    });
 
-    const constraints = { budget, cuisine, mealType, diet, protein };
-    const filters = { cuisine, mealType, diet, budget, protein };
-
-    const meals = await generateMeals(query, filters, { min: 4, max: 4 });
+    const meals = await generateMeals(query, constraints, { min: 4, max: 4 });
 
     return res.status(200).json({ query, constraints, meals, cart: [], totalCost: 0 });
   } catch (error) {
@@ -86,8 +89,10 @@ export async function getIngredients(req, res) {
     if (!Array.isArray(dishes) || dishes.length === 0) {
       return res.status(400).json({ message: "dishes array is required" });
     }
-    const ingredientsByDish = await convertDishesToIngredients(dishes);
-    const ingredients = mergeIngredients(ingredientsByDish);
+    const user = await User.findById(req.user.id);
+    const constraints = req.body.constraints || user?.preferences || {};
+    const ingredientsByDish = await convertDishesToIngredients(dishes, constraints);
+    const ingredients = mergeIngredients(ingredientsByDish, constraints);
     return res.status(200).json({ ingredientsByDish, ingredients });
   } catch (error) {
     return res.status(500).json({ message: error.message });

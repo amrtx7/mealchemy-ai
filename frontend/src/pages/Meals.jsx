@@ -25,7 +25,7 @@ export default function Meals() {
       // Extract dish names to send to the ingredient conversion API
       const dishes = selectedMeals.map(m => m.meal).filter(Boolean);
 
-      const { data } = await api.post("/meal/ingredients", { dishes });
+      const { data } = await api.post("/meal/ingredients", { dishes, constraints });
       setMeals(selectedMeals);
       setIngredients(data.ingredients || []);
       navigate("/ingredients");

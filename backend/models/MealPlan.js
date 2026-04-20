@@ -21,8 +21,12 @@ const cartItemSchema = new mongoose.Schema(
 const mealSchema = new mongoose.Schema(
   {
     meal: { type: String, required: true, trim: true },
+    mealName: { type: String, trim: true, default: "" },
     cuisine: { type: String, trim: true, default: "" },
     mealType: { type: String, trim: true, default: "" },
+    estimatedCost: { type: Number, default: 0 },
+    proteinLevel: { type: String, trim: true, default: "" },
+    cookingTime: { type: String, trim: true, default: "" },
     ingredients: [{ type: String, required: true, trim: true }],
   },
   { _id: false }

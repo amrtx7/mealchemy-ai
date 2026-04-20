@@ -2,6 +2,16 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { env } from "../config/env.js";
 
+function publicUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    preferences: user.preferences || {},
+    onboardingCompleted: Boolean(user.onboardingCompleted),
+  };
+}
+
 function signAccessToken(userId) {
   return jwt.sign({ id: userId }, env.jwtSecret, { expiresIn: "15m" });
 }
@@ -27,7 +37,7 @@ export async function signup(req, res) {
     return res.status(201).json({
       token,
       refreshToken,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -52,7 +62,7 @@ export async function login(req, res) {
     return res.status(200).json({
       token,
       refreshToken,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -95,5 +105,35 @@ export async function logout(req, res) {
     return res.status(200).json({ message: "Logged out" });
   } catch (error) {
     return res.status(200).json({ message: "Logged out" });
+  }
+}
+
+export async function me(req, res) {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.status(200).json({ user: publicUser(user) });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+export async function updatePreferences(req, res) {
+  try {
+    const { name, ...preferences } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (name) user.name = name;
+    user.preferences = {
+      ...(user.preferences?.toObject?.() || user.preferences || {}),
+      ...preferences,
+    };
+    user.onboardingCompleted = true;
+    await user.save();
+
+    return res.status(200).json({ user: publicUser(user) });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 }
