@@ -94,6 +94,20 @@ export const getIngredientsSchema = z.object({
 
 export const optimizeCartSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(1),
+  meals: z
+    .array(
+      z.object({
+        meal: z.string().min(1),
+        mealName: z.string().optional(),
+        cuisine: z.string().optional(),
+        mealType: z.string().optional(),
+        estimatedCost: z.number().optional(),
+        proteinLevel: z.string().optional(),
+        cookingTime: z.string().optional(),
+        ingredients: z.array(z.string().min(1)).optional(),
+      })
+    )
+    .optional(),
   constraints: z
     .object({
       budget: z.number().nullable().optional(),

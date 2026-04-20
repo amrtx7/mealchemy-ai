@@ -21,6 +21,8 @@ export const env = {
   aiBaseUrl: process.env.AI_BASE_URL?.trim() || "",
   geminiApiKey: process.env.GEMINI_API_KEY?.trim() || "",
   geminiModel: process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash",
+  aiTimeoutMs: Number(process.env.AI_TIMEOUT_MS || 45000),
+  aiMaxRetries: Number(process.env.AI_MAX_RETRIES || 2),
 };
 
 export function getAiConfigFingerprint() {

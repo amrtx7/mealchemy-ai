@@ -7,6 +7,7 @@ import { convertDishesToIngredients, mergeIngredients } from "../services/ingred
 
 export async function generateMealPlan(req, res) {
   try {
+    const { query } = req.body;
     const user = await User.findById(req.user.id);
     const queryOverrides = parseMealQuery(query);
     const constraints = mergeMealConstraints({
@@ -110,7 +111,9 @@ export async function optimizeCartFromMeals(req, res) {
     if (!Array.isArray(ingredients) || ingredients.length === 0) {
       return res.status(400).json({ message: "ingredients array is required" });
     }
-    const result = optimizeCart(ingredients, req.body.constraints || {});
+    const result = optimizeCart(ingredients, req.body.constraints || {}, {
+      meals: req.body.meals || [],
+    });
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ message: error.message });

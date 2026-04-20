@@ -55,14 +55,14 @@ export default function Home() {
   return (
     <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none">
       {/* Bold decorative circles (neobrutal) */}
-      <div className="abstract-circle w-96 h-96 -top-20 -left-20 animate-drift" />
+      <div className="abstract-circle w-96 h-96 -top-20 -left-20 animate-drift translate-x-3 -translate-y-3" style={{ background: 'rgb(177, 150, 255)' }} />
       <div
-        className="abstract-circle w-80 h-80 top-1/2 -right-20 animate-float"
-        style={{ animationDelay: "2s" }}
+        className="abstract-circle w-80 h-80 top-1/2 -right-20 animate-float translate-x-3 -translate-y-3"
+        style={{ animationDelay: "2s", background: 'rgb(177, 150, 255)' }}
       />
       <div
-        className="abstract-circle w-64 h-64 bottom-10 left-1/4 animate-drift"
-        style={{ animationDelay: "4s" }}
+        className="abstract-circle w-64 h-64 bottom-10 left-1/4 animate-drift translate-x-3 -translate-y-3"
+        style={{ animationDelay: "4s", background: 'rgb(177, 150, 255)' }}
       />
 
       {/* Floating Food Elements (Inspired by Indian Cuisine) */}

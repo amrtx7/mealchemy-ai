@@ -15,23 +15,58 @@ function extractOpenAIText(response) {
   return response.data?.choices?.[0]?.message?.content || "";
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableError(error) {
+  const status = error?.response?.status;
+  return (
+    error?.code === "ECONNABORTED" ||
+    status === 429 ||
+    (typeof status === "number" && status >= 500)
+  );
+}
+
+async function withRetry(task, { retries = 2, label = "AI request" } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+      if (attempt === retries || !isRetryableError(error)) {
+        throw error;
+      }
+      const waitMs = 1000 * (attempt + 1);
+      console.warn(`[AI-RETRY] ${label} failed (attempt ${attempt + 1}/${retries + 1}). Retrying in ${waitMs}ms...`);
+      await sleep(waitMs);
+    }
+  }
+  throw lastError;
+}
+
 async function generateWithGemini(prompt) {
   const baseUrl = env.aiBaseUrl || "https://generativelanguage.googleapis.com/v1beta";
-  const response = await axios.post(
-    `${baseUrl}/models/${env.aiModel}:generateContent`,
-    {
-      contents: [
+  const response = await withRetry(
+    () =>
+      axios.post(
+        `${baseUrl}/models/${env.aiModel}:generateContent`,
         {
-          parts: [{ text: prompt }],
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
         },
-      ],
-    },
-    {
-      headers: {
-        "x-goog-api-key": env.aiApiKey,
-      },
-      timeout: 20000,
-    }
+        {
+          headers: {
+            "x-goog-api-key": env.aiApiKey,
+          },
+          timeout: env.aiTimeoutMs,
+        }
+      ),
+    { retries: env.aiMaxRetries, label: "Gemini request" }
   );
 
   return {
@@ -42,25 +77,29 @@ async function generateWithGemini(prompt) {
 
 async function generateWithOpenAICompatible(prompt) {
   const baseUrl = env.aiBaseUrl || "https://api.openai.com/v1";
-  const response = await axios.post(
-    `${baseUrl}/chat/completions`,
-    {
-      model: env.aiModel,
-      messages: [
+  const response = await withRetry(
+    () =>
+      axios.post(
+        `${baseUrl}/chat/completions`,
         {
-          role: "user",
-          content: prompt,
+          model: env.aiModel,
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.4,
         },
-      ],
-      temperature: 0.4,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${env.aiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 20000,
-    }
+        {
+          headers: {
+            Authorization: `Bearer ${env.aiApiKey}`,
+            "Content-Type": "application/json",
+          },
+          timeout: env.aiTimeoutMs,
+        }
+      ),
+    { retries: env.aiMaxRetries, label: "OpenAI-compatible request" }
   );
 
   return {

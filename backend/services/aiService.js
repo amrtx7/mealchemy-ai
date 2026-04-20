@@ -61,6 +61,9 @@ Rules:
 - Avoid allergens completely
 - Meals should be realistic and commonly cooked
 - Use common English grocery ingredient names only
+- The "ingredients" array must contain the full raw grocery list needed to cook the dish, not just a short highlight list
+- Do not omit supporting items like oils, sauces, herbs, aromatics, chutney components, or seasoning when they are part of the recipe
+- Keep separately listed ingredients separate, for example "ginger" and "garlic" instead of merging them into one label
 
 Return STRICT JSON array only:
 [

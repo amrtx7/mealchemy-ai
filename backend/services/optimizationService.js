@@ -9,40 +9,21 @@ function estimateWeight(name, count) {
   const stapleItems = ["rice", "flour", "atta", "dal", "lentil", "beans", "chana", "rajma", "masoor"];
   const dairyProteinItems = ["paneer", "tofu", "curd", "yogurt", "cheese", "butter"];
   const smallFreshItems = ["ginger", "garlic", "green chili", "lemon", "lime"];
-  const nutsItems = ["peanut", "peanuts", "almond", "cashew", "walnut"];
+  const nutsItems = ["peanut", "almond", "cashew", "walnut"];
+  const breadItems = ["pav", "bun", "roll", "bread"];
+  const pantryItems = ["water"];
 
-  if (freshHerbs.some((item) => key.includes(item))) {
-    return { amount: 250 * count, unit: "g" };
-  }
+  if (pantryItems.includes(key)) return { amount: count, unit: "pc" };
+  if (breadItems.some((item) => key.includes(item))) return { amount: 6 * count, unit: "pc" };
 
-  if (tinySpices.some((item) => key.includes(item))) {
-    return { amount: 25 * count, unit: "g" };
-  }
-
-  if (spiceItems.some((item) => key.includes(item))) {
-    return { amount: 100 * count, unit: "g" };
-  }
-
-  if (liquidItems.some((item) => key.includes(item))) {
-    return { amount: 500 * count, unit: "ml" };
-  }
-
-  if (stapleItems.some((item) => key.includes(item))) {
-    return { amount: 1000 * count, unit: "g" };
-  }
-
-  if (dairyProteinItems.some((item) => key.includes(item))) {
-    return { amount: 500 * count, unit: "g" };
-  }
-
-  if (nutsItems.some((item) => key.includes(item))) {
-    return { amount: 500 * count, unit: "g" };
-  }
-
-  if (smallFreshItems.some((item) => key.includes(item))) {
-    return { amount: 250 * count, unit: "g" };
-  }
-
+  if (freshHerbs.some((item) => key.includes(item))) return { amount: 250 * count, unit: "g" };
+  if (tinySpices.some((item) => key.includes(item))) return { amount: 25 * count, unit: "g" };
+  if (spiceItems.some((item) => key.includes(item))) return { amount: 100 * count, unit: "g" };
+  if (liquidItems.some((item) => key.includes(item))) return { amount: 500 * count, unit: "ml" };
+  if (stapleItems.some((item) => key.includes(item))) return { amount: 1000 * count, unit: "g" };
+  if (dairyProteinItems.some((item) => key.includes(item))) return { amount: 500 * count, unit: "g" };
+  if (nutsItems.some((item) => key.includes(item))) return { amount: 500 * count, unit: "g" };
+  if (smallFreshItems.some((item) => key.includes(item))) return { amount: 250 * count, unit: "g" };
   return { amount: 500 * count, unit: "g" };
 }
 
@@ -54,6 +35,38 @@ function normalizeIngredients(ingredients) {
     map.set(name, (map.get(name) || 0) + 1);
   }
   return Array.from(map.entries()).map(([name, quantity]) => ({ name, quantity }));
+}
+
+function ingredientTokens(value) {
+  return normalizeIngredientName(value)
+    .split(" ")
+    .filter(Boolean);
+}
+
+function isProteinOrBase(name) {
+  const key = normalizeIngredientName(name);
+  const coreTerms = [
+    "chicken",
+    "mutton",
+    "fish",
+    "egg",
+    "paneer",
+    "tofu",
+    "rice",
+    "pav",
+    "bun",
+    "bread",
+    "roti",
+    "naan",
+    "paratha",
+    "dal",
+    "lentil",
+    "potato",
+    "minced chicken",
+    "mince",
+  ];
+
+  return coreTerms.some((term) => key.includes(term));
 }
 
 function getIngredientRole(name) {
@@ -76,6 +89,14 @@ function getIngredientRole(name) {
     "besan",
     "sugar",
     "jaggery",
+    "chicken",
+    "mince",
+    "pav",
+    "bun",
+    "bread",
+    "cucumber",
+    "lemon",
+    "oil",
   ];
   const optionalTerms = [
     "cardamom",
@@ -87,12 +108,8 @@ function getIngredientRole(name) {
     "pistachio",
     "raisin",
     "maple syrup",
-    "honey",
     "vanilla",
     "cream",
-    "cheese",
-    "butter",
-    "ghee",
     "coriander leaves",
     "mint leaves",
   ];
@@ -102,11 +119,41 @@ function getIngredientRole(name) {
   return "supporting";
 }
 
-function optionalRank(item, budget, averagePrice) {
+function deriveCoreIngredients(meals = []) {
+  const core = new Set();
+
+  for (const meal of meals) {
+    const mealTokens = ingredientTokens(meal.meal || meal.mealName || "");
+    const mealIngredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+
+    mealIngredients.forEach((ingredient, index) => {
+      const normalized = normalizeIngredientName(ingredient);
+      if (!normalized) return;
+
+      let score = 0;
+      const tokens = ingredientTokens(ingredient);
+      const overlap = tokens.filter((token) => mealTokens.includes(token)).length;
+
+      if (index <= 1) score += 7;
+      else if (index <= 3) score += 4;
+
+      if (isProteinOrBase(normalized)) score += 4;
+      if (overlap > 0) score += 6 + overlap;
+      if (mealTokens.includes("keema") && (normalized.includes("chicken") || normalized.includes("mince"))) score += 8;
+      if (mealTokens.includes("pav") && (normalized.includes("pav") || normalized.includes("bun") || normalized.includes("roll"))) score += 8;
+
+      if (score >= 7) core.add(normalized);
+    });
+  }
+
+  return core;
+}
+
+function optionalRank(item, budget, averagePrice, coreIngredients) {
   const role = getIngredientRole(item.name);
   let score = 0;
 
-  if (!item.available) return 1000;
+  if (coreIngredients.has(normalizeIngredientName(item.name))) return -1000;
   if (role === "optional") score += 80;
   if (role === "supporting") score += 35;
   if (budget && item.price > budget * 0.35) score += 45;
@@ -115,13 +162,28 @@ function optionalRank(item, budget, averagePrice) {
   return score;
 }
 
-function buildCartItems(unique) {
+function buildCartItems(unique, coreIngredients) {
   let totalCost = 0;
 
   const cartItems = unique.map(({ name, quantity }) => {
     const desired = estimateWeight(name, quantity);
-    const allOffers = getIngredientPricing(name, desired);
-    const offers = allOffers;
+    const offers = getIngredientPricing(name, desired);
+    const isCore = coreIngredients.has(name);
+
+    if (name === "water") {
+      return {
+        name,
+        amount: desired.amount,
+        unit: desired.unit,
+        price: 0,
+        store: "Pantry",
+        available: true,
+        priority: "high",
+        priorityLabel: "High priority",
+        reason: "Recipe ingredient noted for cooking, but treated as a pantry staple with no store pricing.",
+        isCore,
+      };
+    }
 
     if (!offers.length) {
       return {
@@ -131,10 +193,13 @@ function buildCartItems(unique) {
         price: 0,
         store: "Unavailable",
         available: false,
-        priority: "optional",
-        priorityLabel: "Optional",
-        reason: "No matching product was found in the store database.",
+        priority: isCore ? "high" : "optional",
+        priorityLabel: isCore ? "High priority" : "Optional",
+        reason: isCore
+          ? "Core ingredient for the selected meal, but no matching product was found in the store database."
+          : "No matching product was found in the store database.",
         unavailableReason: "No matching product found in store database",
+        isCore,
       };
     }
 
@@ -153,7 +218,10 @@ function buildCartItems(unique) {
       available: true,
       priority: "high",
       priorityLabel: "High priority",
-      reason: "Needed for the selected meals and included in the recommended cart.",
+      reason: isCore
+        ? "Core ingredient for the selected meal and included in the recommended cart."
+        : "Needed for the selected meals and included in the recommended cart.",
+      isCore,
     };
   });
 
@@ -167,7 +235,7 @@ function buildCartItems(unique) {
   };
 }
 
-function applyBudgetPriorities(cartItems, budget) {
+function applyBudgetPriorities(cartItems, budget, coreIngredients) {
   const availableItems = cartItems.filter((item) => item.available);
   const fullCartTotal = availableItems.reduce((sum, item) => sum + item.price, 0);
   const averagePrice = availableItems.length ? fullCartTotal / availableItems.length : 0;
@@ -177,7 +245,9 @@ function applyBudgetPriorities(cartItems, budget) {
     if (!item.available) continue;
     item.priority = "high";
     item.priorityLabel = "High priority";
-    item.reason = "Needed for the selected meals and included in the recommended cart.";
+    item.reason = item.isCore
+      ? "Core ingredient for the selected meal and included in the recommended cart."
+      : "Needed for the selected meals and included in the recommended cart.";
   }
 
   if (!budget || fullCartTotal <= budget) {
@@ -194,8 +264,8 @@ function applyBudgetPriorities(cartItems, budget) {
   }
 
   const candidates = availableItems
-    .map((item) => ({ item, score: optionalRank(item, budget, averagePrice) }))
-    .filter(({ item }) => getIngredientRole(item.name) !== "essential")
+    .map((item) => ({ item, score: optionalRank(item, budget, averagePrice, coreIngredients) }))
+    .filter(({ item }) => !item.isCore && getIngredientRole(item.name) === "optional")
     .sort((a, b) => b.score - a.score || b.item.price - a.item.price);
 
   for (const { item } of candidates) {
@@ -220,20 +290,19 @@ function applyBudgetPriorities(cartItems, budget) {
     optionalTotal: Number(optionalTotal.toFixed(2)),
     budgetReason:
       highPriorityTotal <= budget
-        ? `The full cart was ₹${fullCartTotal.toFixed(2)}, so expensive/non-core items were marked optional to target the ₹${budget} budget.`
+        ? `The full cart was ₹${fullCartTotal.toFixed(2)}, so expensive non-core items were marked optional to target the ₹${budget} budget.`
         : `Even after marking non-core expensive items optional, the high-priority products are ₹${highPriorityTotal.toFixed(2)}, above the ₹${budget} budget.`,
   };
 }
 
-export function optimizeCart(ingredients, constraints = {}) {
+export function optimizeCart(ingredients, constraints = {}, context = {}) {
   const unique = normalizeIngredients(ingredients);
-  const builtCart = buildCartItems(unique);
+  const coreIngredients = deriveCoreIngredients(context.meals || []);
+  const builtCart = buildCartItems(unique, coreIngredients);
   const budget = Number(constraints.budget || 0);
-  const prioritized = applyBudgetPriorities(builtCart.cartItems, budget);
+  const prioritized = applyBudgetPriorities(builtCart.cartItems, budget, coreIngredients);
   const { cartItems, fullCartTotal, highPriorityTotal, optionalTotal, budgetReason } = prioritized;
-  const storesUsed = Array.from(
-    new Set(cartItems.filter((item) => item.available).map((item) => item.store))
-  );
+  const storesUsed = Array.from(new Set(cartItems.filter((item) => item.available).map((item) => item.store)));
 
   const availableCount = cartItems.filter((item) => item.available).length;
   const unavailableCount = cartItems.length - availableCount;

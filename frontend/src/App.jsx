@@ -5,7 +5,6 @@ import PageDecor from "./components/PageDecor";
 import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
 import Meals from "./pages/Meals";
-import IngredientSelection from "./pages/IngredientSelection";
 import Cart from "./pages/Cart";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
@@ -14,7 +13,7 @@ import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 
-const DECOR_BOOST_PATHS = new Set(["/meals", "/ingredients", "/cart", "/dashboard", "/history"]);
+const DECOR_BOOST_PATHS = new Set(["/meals", "/cart", "/dashboard", "/history"]);
 const NO_DECOR_PATHS = new Set(["/onboarding"]);
 
 export default function App() {
@@ -59,14 +58,6 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Meals />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ingredients"
-            element={
-              <PrivateRoute>
-                <IngredientSelection />
               </PrivateRoute>
             }
           />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useMeals } from "../context/MealContext";
@@ -14,31 +14,126 @@ function displayPackage(item) {
 export default function Cart() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const { cart, totalCost, meals, query, constraints, cartSummary } = useMeals();
+  const [building, setBuilding] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedMap, setSelectedMap] = useState({});
+  const {
+    cart,
+    setCart,
+    totalCost,
+    setTotalCost,
+    meals,
+    query,
+    constraints,
+    cartSummary,
+    setCartSummary,
+    ingredients,
+  } = useMeals();
 
-  const highPriorityItems = cart.filter((item) => item.priority !== "optional" && item.available !== false);
-  const optionalItems = cart.filter((item) => item.priority === "optional" || item.available === false);
+  useEffect(() => {
+    if (cart.length === 0) {
+      setSelectedMap({});
+      return;
+    }
+
+    const next = {};
+    cart.forEach((item, idx) => {
+      next[`${item.name}-${idx}`] = true;
+    });
+    setSelectedMap(next);
+  }, [cart]);
+
+  useEffect(() => {
+    async function buildCart() {
+      if (cart.length > 0 || ingredients.length === 0) return;
+
+      setBuilding(true);
+      setError("");
+      try {
+        const { data } = await api.post("/cart/optimize", {
+          ingredients,
+          meals,
+          constraints,
+        });
+
+        setCart(data.cartItems || []);
+        setTotalCost(data.totalCost || 0);
+        setCartSummary({
+          selectedStore: data.selectedStore,
+          storesUsed: data.storesUsed || [],
+          budget: data.budget,
+          budgetReason: data.budgetReason,
+          fullCartTotal: data.fullCartTotal || 0,
+          highPriorityTotal: data.highPriorityTotal || data.totalCost || 0,
+          optionalTotal: data.optionalTotal || 0,
+          availableCount: data.availableCount || 0,
+          unavailableCount: data.unavailableCount || 0,
+          withinBudget: data.withinBudget,
+        });
+      } catch (err) {
+        setError("Failed to generate cart. Please try again.");
+        console.error("Cart optimize error:", err);
+      } finally {
+        setBuilding(false);
+      }
+    }
+
+    buildCart();
+  }, [cart.length, constraints, ingredients, setCart, setCartSummary, setTotalCost]);
+
+  const keyFor = (item, idx) => `${item.name}-${idx}`;
+  const isSelected = (item, idx) => selectedMap[keyFor(item, idx)] !== false;
+
+  const cartEntries = cart.map((item, idx) => ({ item, idx }));
+  const selectedEntries = cartEntries.filter(({ item, idx }) => isSelected(item, idx));
+  const deselectedEntries = cartEntries.filter(({ item, idx }) => !isSelected(item, idx));
+  const selectedItems = selectedEntries.map(({ item }) => item);
+  const highPriorityEntries = selectedEntries.filter(
+    ({ item }) => item.priority !== "optional"
+  );
+  const optionalEntries = selectedEntries.filter(
+    ({ item }) => item.priority === "optional"
+  );
+  const highPriorityItems = highPriorityEntries.map(({ item }) => item);
+  const optionalItems = optionalEntries.map(({ item }) => item);
   const highPriorityTotal =
     cartSummary?.highPriorityTotal ??
     highPriorityItems.reduce((sum, item) => sum + (item.price || 0), 0) ??
     totalCost;
   const optionalTotal =
-    cartSummary?.optionalTotal ?? optionalItems.reduce((sum, item) => sum + (item.available === false ? 0 : item.price || 0), 0);
+    cartSummary?.optionalTotal ??
+    optionalItems.reduce((sum, item) => sum + (item.available === false ? 0 : item.price || 0), 0);
   const fullCartTotal = cartSummary?.fullCartTotal ?? highPriorityTotal + optionalTotal;
+  const userSelectedTotal = selectedItems.reduce(
+    (sum, item) => sum + (item.available === false ? 0 : item.price || 0),
+    0
+  );
   const budget = cartSummary?.budget ?? constraints?.budget;
   const storesUsed = cartSummary?.storesUsed?.length
     ? cartSummary.storesUsed.join(", ")
     : Array.from(new Set(cart.filter((item) => item.available !== false).map((item) => item.store))).join(", ");
 
+  const toggleItem = (item, idx) => {
+    const key = keyFor(item, idx);
+    setSelectedMap((prev) => ({
+      ...prev,
+      [key]: prev[key] === false,
+    }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
+      const finalCart = cart.filter((item, idx) => isSelected(item, idx));
       await api.post("/meals/save", {
         query: query || "Generated Meal Plan",
         meals: meals.length ? meals : [{ meal: "Custom Plan", ingredients: [] }],
-        cart,
+        cart: finalCart,
         constraints,
-        totalCost: highPriorityTotal,
+        totalCost: finalCart.reduce(
+          (sum, item) => sum + (item.available === false ? 0 : item.price || 0),
+          0
+        ),
       });
       navigate("/history");
     } catch (err) {
@@ -54,20 +149,21 @@ export default function Cart() {
 
   const renderItem = (item, idx) => {
     const isOptional = item.priority === "optional" || item.available === false;
+    const included = isSelected(item, idx);
 
     return (
       <article
         key={`${item.name}-${idx}`}
-        className="theme-raised p-5 grid md:grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr] gap-4 items-center"
+        className="theme-raised p-5 grid md:grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr] gap-4 items-center"
       >
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <span
               className={`px-2.5 py-1 text-xs font-black rounded-md border-brutal border-black shadow-neo-sm ${
-                isOptional ? "theme-muted-text bg-[var(--surface-raised)]" : "theme-accent-bg"
+                !included || isOptional ? "theme-muted-text bg-[var(--surface-raised)]" : "theme-accent-bg"
               }`}
             >
-              {item.available === false ? "Unavailable" : item.priorityLabel || "High priority"}
+              {!included ? "Removed by you" : item.available === false ? "Unavailable" : item.priorityLabel || "High priority"}
             </span>
             <span className="text-xs font-bold uppercase tracking-widest theme-muted-text">
               {item.store || "No store"}
@@ -89,21 +185,32 @@ export default function Cart() {
         <div className="theme-muted p-4">
           <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-1">Reason</p>
           <p className="text-sm theme-text leading-snug">
-            {item.reason || (isOptional ? "Optional for this budget." : "Included in recommended cart.")}
+            {!included
+              ? "You removed this from the final cart, but it stays visible here for transparency."
+              : item.reason || (isOptional ? "Optional for this budget." : "Included in recommended cart.")}
           </p>
         </div>
 
-        <div className="text-left md:text-right">
-          <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-1">Price</p>
-          {item.available === false ? (
-            <p className="font-bold" style={{ color: "var(--danger)" }}>
-              Not priced
-            </p>
-          ) : (
-            <p className={`text-3xl font-black ${isOptional ? "theme-muted-text" : "theme-accent"}`}>
-              {money(item.price)}
-            </p>
-          )}
+        <div className="text-left md:text-right space-y-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mb-1">Price</p>
+            {item.available === false ? (
+              <p className="font-bold" style={{ color: "var(--danger)" }}>
+                Not priced
+              </p>
+            ) : (
+              <p className={`text-3xl font-black ${!included || isOptional ? "theme-muted-text" : "theme-accent"}`}>
+                {money(item.price)}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className={included ? "btn-secondary whitespace-nowrap text-sm px-4 py-2" : "btn-primary whitespace-nowrap text-sm px-4 py-2"}
+            onClick={() => toggleItem(item, idx)}
+          >
+            {included ? "Remove" : "Add back"}
+          </button>
         </div>
       </article>
     );
@@ -117,11 +224,21 @@ export default function Cart() {
         </p>
         <h1 className="text-4xl md:text-5xl font-black theme-text mb-4 drop-shadow-[2px_2px_0_var(--border)]">Optimized Grocery Cart</h1>
         <p className="theme-muted-text text-lg">
-          Items are priced first, then separated into high-priority and optional buys.
+          Every ingredient from your selected meals stays visible here. Budget logic only changes priority and recommendations.
         </p>
       </div>
 
-      {cart.length === 0 ? (
+      {error && (
+        <div className="theme-raised p-4 text-center" style={{ color: "var(--danger)" }}>
+          {error}
+        </div>
+      )}
+
+      {building ? (
+        <div className="text-center py-20 theme-muted">
+          <p className="theme-muted-text text-lg mb-6">Building your cart from the full recipe ingredient list...</p>
+        </div>
+      ) : cart.length === 0 ? (
         <div className="text-center py-20 theme-muted">
           <p className="theme-muted-text text-lg mb-6">Your cart is empty. Please select meals to generate a cart.</p>
           <button className="btn-primary" onClick={handleGenerateAgain}>Start Over</button>
@@ -129,7 +246,7 @@ export default function Cart() {
       ) : (
         <div className="space-y-8">
           <div className="theme-hero p-6 md:p-8">
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-5 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Budget</p>
                 <p className="text-3xl font-black">{budget ? money(budget) : "Not set"}</p>
@@ -141,6 +258,10 @@ export default function Cart() {
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Full Cart</p>
                 <p className="text-3xl font-black">{money(fullCartTotal)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest opacity-75">Your Final Cart</p>
+                <p className="text-3xl font-black">{money(userSelectedTotal)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Stores Used</p>
@@ -156,7 +277,7 @@ export default function Cart() {
             <h2 className="text-3xl font-black theme-text mb-4">High Priority</h2>
             <div className="space-y-4">
               {highPriorityItems.length > 0 ? (
-                highPriorityItems.map(renderItem)
+                highPriorityEntries.map(({ item, idx }) => renderItem(item, idx))
               ) : (
                 <div className="theme-muted p-6 theme-muted-text">
                   No high-priority items fit the current budget.
@@ -169,15 +290,27 @@ export default function Cart() {
             <div>
               <h2 className="text-3xl font-black theme-text mb-2">Optional / Budget Risks</h2>
               <p className="theme-muted-text mb-4">
-                These are useful, but they were removed from the recommended total because they are expensive,
-                non-core, unavailable, or push the cart too far above budget.
+                These ingredients still belong to the recipe. They stay visible, but the optimizer flags them as expensive,
+                non-core, unavailable, or likely to push the cart above budget.
               </p>
-              <div className="space-y-4">{optionalItems.map(renderItem)}</div>
+              <div className="space-y-4">{optionalEntries.map(({ item, idx }) => renderItem(item, idx))}</div>
+            </div>
+          )}
+
+          {deselectedEntries.length > 0 && (
+            <div>
+              <h2 className="text-3xl font-black theme-text mb-2">Removed By You</h2>
+              <p className="theme-muted-text mb-4">
+                These ingredients are still shown for transparency, but they will not be included when you save this cart.
+              </p>
+              <div className="space-y-4">
+                {deselectedEntries.map(({ item, idx }) => renderItem(item, idx))}
+              </div>
             </div>
           )}
 
           <div className="theme-raised p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="grid sm:grid-cols-3 gap-5 w-full md:w-auto">
+            <div className="grid sm:grid-cols-4 gap-5 w-full md:w-auto">
               <div>
                 <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Recommended Total</p>
                 <p className="text-4xl font-black theme-accent">{money(highPriorityTotal)}</p>
@@ -190,6 +323,10 @@ export default function Cart() {
                 <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Full Cart Total</p>
                 <p className="text-3xl font-black theme-text">{money(fullCartTotal)}</p>
               </div>
+              <div>
+                <p className="theme-muted-text text-xs font-bold uppercase tracking-widest mb-1">Selected Total</p>
+                <p className="text-3xl font-black theme-text">{money(userSelectedTotal)}</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center">
@@ -199,9 +336,9 @@ export default function Cart() {
               <button
                 className="btn-primary whitespace-nowrap disabled:opacity-50"
                 onClick={handleSave}
-                disabled={saving || cart.length === 0}
+                disabled={saving || selectedItems.length === 0}
               >
-                {saving ? "Saving..." : "Save Recommended List"}
+                {saving ? "Saving..." : "Save Cart"}
               </button>
             </div>
           </div>

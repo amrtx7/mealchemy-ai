@@ -25,6 +25,7 @@ const ALIASES = new Map([
   ["pyaaz", "onion"],
   ["tamatar", "tomato"],
   ["mirchi", "chili"],
+  ["chilly", "chili"],
   ["chilli", "chili"],
   ["haldi", "turmeric"],
   ["jeera", "cumin"],
@@ -39,7 +40,24 @@ const ALIASES = new Map([
   ["yogurt", "curd"],
   ["green chilli", "green chili"],
   ["red chilli", "red chili"],
+  ["chicken mince", "minced chicken"],
+  ["chicken keema", "minced chicken"],
+  ["pav buns", "pav dinner rolls"],
+  ["pav bun", "pav dinner rolls"],
+  ["lemon juice", "lemon"],
+  ["lime juice", "lime"],
+  ["cooking oil", "vegetable oil"],
+  ["vegetable oil", "vegetable oil blend"],
 ]);
+
+function singularizeToken(token) {
+  if (!token || token.length <= 3) return token;
+  if (token.endsWith("ies")) return `${token.slice(0, -3)}y`;
+  if (token.endsWith("oes")) return token.slice(0, -2);
+  if (token.endsWith("sses")) return token.slice(0, -2);
+  if (token.endsWith("s") && !token.endsWith("ss")) return token.slice(0, -1);
+  return token;
+}
 
 const STOP_WORDS = new Set([
   "fresh",
@@ -108,6 +126,8 @@ export function normalizeIngredientName(value) {
   let normalized = String(value || "")
     .toLowerCase()
     .normalize("NFKD")
+    .replace(/\(.*?\)/g, " ")
+    .replace(/\be\.?\s*g\.?\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -121,6 +141,9 @@ export function normalizeIngredientName(value) {
 
   return normalized
     .replace(/[^\w\s]/g, " ")
+    .split(" ")
+    .map(singularizeToken)
+    .join(" ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -238,6 +261,7 @@ export function getIngredientPricing(ingredient, desired = {}) {
         !hasPreparedProductMismatch(ingredient, product)
     )
     .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
       const aScore = a.score - packagePenalty(a, desired);
       const bScore = b.score - packagePenalty(b, desired);
       if (bScore !== aScore) return bScore - aScore;
