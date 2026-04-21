@@ -162,12 +162,13 @@ function optionalRank(item, budget, averagePrice, coreIngredients) {
   return score;
 }
 
-function buildCartItems(unique, coreIngredients) {
+function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
   let totalCost = 0;
 
   const cartItems = unique.map(({ name, quantity }) => {
     const desired = estimateWeight(name, quantity);
-    const offers = getIngredientPricing(name, desired);
+    const liveSelection = preselectedProducts[name];
+    const offers = liveSelection ? [] : getIngredientPricing(name, desired);
     const isCore = coreIngredients.has(name);
 
     if (name === "water") {
@@ -185,7 +186,7 @@ function buildCartItems(unique, coreIngredients) {
       };
     }
 
-    if (!offers.length) {
+    if (!liveSelection && !offers.length) {
       return {
         name,
         amount: desired.amount,
@@ -203,18 +204,23 @@ function buildCartItems(unique, coreIngredients) {
       };
     }
 
-    const selected = offers[0];
+    const selected = liveSelection || offers[0];
     const linePrice = Number(selected.price.toFixed(2));
     totalCost += linePrice;
 
     return {
-      name: selected.baseName,
+      name,
       amount: selected.packageAmount || desired.amount,
       unit: selected.packageUnit || desired.unit,
       price: linePrice,
       store: selected.store,
       productName: selected.productName,
       packageLabel: selected.packageLabel,
+      imageUrl: selected.imageUrl || "",
+      productUrl: selected.productUrl || "",
+      deliveryTime: selected.deliveryTime || "",
+      source: selected.source || (liveSelection ? "live" : "catalog"),
+      storeSlug: selected.storeSlug || normalizeIngredientName(selected.store),
       available: true,
       priority: "high",
       priorityLabel: "High priority",
@@ -298,7 +304,7 @@ function applyBudgetPriorities(cartItems, budget, coreIngredients) {
 export function optimizeCart(ingredients, constraints = {}, context = {}) {
   const unique = normalizeIngredients(ingredients);
   const coreIngredients = deriveCoreIngredients(context.meals || []);
-  const builtCart = buildCartItems(unique, coreIngredients);
+  const builtCart = buildCartItems(unique, coreIngredients, context.preselectedProducts || {});
   const budget = Number(constraints.budget || 0);
   const prioritized = applyBudgetPriorities(builtCart.cartItems, budget, coreIngredients);
   const { cartItems, fullCartTotal, highPriorityTotal, optionalTotal, budgetReason } = prioritized;

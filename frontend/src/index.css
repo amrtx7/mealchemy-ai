@@ -290,6 +290,17 @@ h4 {
   }
 }
 
+@keyframes loader-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -300,6 +311,14 @@ h4 {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.7s ease-out forwards;
+}
+
+.animate-loader-hop {
+  animation: loader-hop 1.2s ease-in-out infinite;
+}
+
+.animate-loader-hop-delayed {
+  animation: loader-hop 1.2s ease-in-out infinite 0.18s;
 }
 
 .abstract-circle {

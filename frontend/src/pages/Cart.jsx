@@ -11,6 +11,16 @@ function displayPackage(item) {
   return item.packageLabel || `${item.amount} ${item.unit}`;
 }
 
+function storeBadgeClasses(storeSlug) {
+  if (storeSlug === "blinkit") {
+    return "bg-[#FFD84D] text-black";
+  }
+  if (storeSlug === "zepto") {
+    return "bg-[#7C3AED] text-white";
+  }
+  return "theme-muted";
+}
+
 export default function Cart() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
@@ -154,7 +164,7 @@ export default function Cart() {
     return (
       <article
         key={`${item.name}-${idx}`}
-        className="theme-raised p-5 grid md:grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr] gap-4 items-center"
+        className="theme-raised p-5 grid md:grid-cols-[1.35fr_0.7fr_0.8fr_0.7fr] gap-4 items-center"
       >
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -165,16 +175,47 @@ export default function Cart() {
             >
               {!included ? "Removed by you" : item.available === false ? "Unavailable" : item.priorityLabel || "High priority"}
             </span>
-            <span className="text-xs font-bold uppercase tracking-widest theme-muted-text">
+            <span
+              className={`px-2.5 py-1 text-xs font-black uppercase tracking-widest rounded-md border-brutal border-black shadow-neo-sm ${storeBadgeClasses(item.storeSlug)}`}
+            >
               {item.store || "No store"}
             </span>
           </div>
-          <h3 className="text-2xl font-black theme-text capitalize leading-tight">
-            {item.name}
-          </h3>
-          <p className="text-sm theme-muted-text mt-1 capitalize">
-            {item.productName || item.unavailableReason || "No product match"}
-          </p>
+          <div className="grid grid-cols-[84px_1fr] gap-4 items-start">
+            <div className="aspect-square rounded-xl border-[3px] border-black bg-[#F8F4EC] overflow-hidden">
+              {item.imageUrl ? (
+                <img src={item.imageUrl} alt={item.productName || item.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[10px] font-black uppercase text-center px-2">
+                  No image
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-black theme-text capitalize leading-tight">
+                {item.name}
+              </h3>
+              <p className="text-sm theme-muted-text mt-1 capitalize">
+                {item.available === false ? item.unavailableReason || "No product match" : "Matched product"}
+              </p>
+              {item.productName ? (
+                <a
+                  href={item.productUrl || undefined}
+                  target={item.productUrl ? "_blank" : undefined}
+                  rel={item.productUrl ? "noreferrer" : undefined}
+                  className="mt-2 inline-block text-base font-black theme-text underline decoration-[3px] underline-offset-4"
+                >
+                  {item.productName}
+                </a>
+              ) : null}
+              {item.deliveryTime ? (
+                <p className="text-xs font-bold uppercase tracking-widest theme-muted-text mt-2">
+                  {item.deliveryTime}
+                </p>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         <div className="theme-muted p-4">

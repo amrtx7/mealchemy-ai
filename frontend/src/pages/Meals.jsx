@@ -14,6 +14,7 @@ export default function Meals() {
     setCart,
     setTotalCost,
     setCartSummary,
+    setLiveCheck,
   } = useMeals();
 
   const toggleSelection = (idx) => {
@@ -41,7 +42,14 @@ export default function Meals() {
       setCart([]);
       setTotalCost(0);
       setCartSummary(null);
-      navigate("/cart");
+      setLiveCheck({
+        results: [],
+        priorityIngredients: [],
+        hasLiveResults: false,
+        cartPreview: null,
+        pincode: "",
+      });
+      navigate("/live-check");
     } catch (err) {
       setError(err.message || "Failed to build cart. Please try again.");
       console.error("Cart preparation error:", err);

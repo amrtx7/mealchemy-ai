@@ -10,6 +10,13 @@ export function MealProvider({ children }) {
   const [totalCost, setTotalCost] = useState(0);
   const [cartSummary, setCartSummary] = useState(null);
   const [ingredients, setIngredients] = useState([]); // merged raw ingredients before cart
+  const [liveCheck, setLiveCheck] = useState({
+    results: [],
+    priorityIngredients: [],
+    hasLiveResults: false,
+    cartPreview: null,
+    pincode: "",
+  });
 
   return (
     <MealContext.Provider
@@ -28,6 +35,8 @@ export function MealProvider({ children }) {
         setCartSummary,
         ingredients,
         setIngredients,
+        liveCheck,
+        setLiveCheck,
       }}
     >
       {children}

@@ -4,6 +4,7 @@ import { generateMeals } from "../services/aiService.js";
 import { mergeMealConstraints, parseMealQuery } from "../services/parserService.js";
 import { optimizeCart } from "../services/optimizationService.js";
 import { convertDishesToIngredients, mergeIngredients } from "../services/ingredientService.js";
+import { buildLiveComparison } from "../services/livePricingService.js";
 
 export async function generateMealPlan(req, res) {
   try {
@@ -114,6 +115,16 @@ export async function optimizeCartFromMeals(req, res) {
     const result = optimizeCart(ingredients, req.body.constraints || {}, {
       meals: req.body.meals || [],
     });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+export async function liveCheckIngredients(req, res) {
+  try {
+    console.log("[LiveCheckRoute] request received -> using scraper debug build");
+    const result = await buildLiveComparison(req.body || {});
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ message: error.message });

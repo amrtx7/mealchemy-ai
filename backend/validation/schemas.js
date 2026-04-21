@@ -76,6 +76,11 @@ export const saveMealPlanSchema = z.object({
         store: z.string(),
         productName: z.string().optional(),
         packageLabel: z.string().optional(),
+        imageUrl: z.string().optional(),
+        productUrl: z.string().optional(),
+        deliveryTime: z.string().optional(),
+        source: z.string().optional(),
+        storeSlug: z.string().optional(),
         available: z.boolean().optional(),
         unavailableReason: z.string().optional(),
         priority: z.enum(["high", "optional"]).optional(),
@@ -115,4 +120,24 @@ export const optimizeCartSchema = z.object({
       dietType: z.string().optional(),
     })
     .optional(),
+});
+
+export const liveCheckSchema = z.object({
+  ingredients: z.array(z.string().min(1)).min(1),
+  meals: z
+    .array(
+      z.object({
+        meal: z.string().min(1),
+        mealName: z.string().optional(),
+        cuisine: z.string().optional(),
+        mealType: z.string().optional(),
+        estimatedCost: z.number().optional(),
+        proteinLevel: z.string().optional(),
+        cookingTime: z.string().optional(),
+        ingredients: z.array(z.string().min(1)).optional(),
+      })
+    )
+    .optional(),
+  constraints: z.record(z.string(), z.any()).optional(),
+  pincode: z.string().min(4).max(10).optional(),
 });
