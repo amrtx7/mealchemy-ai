@@ -132,10 +132,19 @@ export default function Cart() {
   };
 
   const handleSave = async () => {
+    console.log("[Cart] Save clicked", {
+      cartCount: cart.length,
+      selectedCount: selectedItems.length,
+      query,
+      mealsCount: meals.length,
+      hasConstraints: Boolean(constraints),
+    });
+
     setSaving(true);
+    setError("");
     try {
       const finalCart = cart.filter((item, idx) => isSelected(item, idx));
-      await api.post("/meals/save", {
+      const payload = {
         query: query || "Generated Meal Plan",
         meals: meals.length ? meals : [{ meal: "Custom Plan", ingredients: [] }],
         cart: finalCart,
@@ -144,10 +153,33 @@ export default function Cart() {
           (sum, item) => sum + (item.available === false ? 0 : item.price || 0),
           0
         ),
+      };
+
+      console.log("[Cart] Save payload", {
+        query: payload.query,
+        mealsCount: payload.meals.length,
+        cartCount: payload.cart.length,
+        totalCost: payload.totalCost,
+        sampleMeal: payload.meals[0] || null,
+        sampleCartItem: payload.cart[0] || null,
+      });
+
+      const response = await api.post("/meals/save", payload);
+      console.log("[Cart] Save success", {
+        status: response.status,
+        id: response?.data?._id,
       });
       navigate("/history");
     } catch (err) {
-      console.error(err);
+      console.error("[Cart] Save failed", {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      setError(
+        err?.response?.data?.message ||
+          "Failed to save cart. Please try again."
+      );
     } finally {
       setSaving(false);
     }

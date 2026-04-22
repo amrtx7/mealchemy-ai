@@ -29,7 +29,16 @@ export async function generateMealPlan(req, res) {
 export async function saveMealPlan(req, res) {
   try {
     const { query, constraints, meals, cart, totalCost } = req.body;
+    console.log("[SaveMealPlan] request received", {
+      userId: req.user?.id,
+      query,
+      mealsCount: Array.isArray(meals) ? meals.length : -1,
+      cartCount: Array.isArray(cart) ? cart.length : -1,
+      totalCost,
+      constraintKeys: Object.keys(constraints || {}),
+    });
     if (!query || !Array.isArray(meals) || meals.length === 0) {
+      console.warn("[SaveMealPlan] invalid request: query/meals missing");
       return res.status(400).json({ message: "query and meals are required" });
     }
     const saved = await MealPlan.create({
@@ -40,8 +49,18 @@ export async function saveMealPlan(req, res) {
       cart: cart || [],
       totalCost: totalCost || 0,
     });
+    console.log("[SaveMealPlan] saved", {
+      id: saved?._id?.toString?.(),
+      mealsCount: saved?.meals?.length || 0,
+      cartCount: saved?.cart?.length || 0,
+    });
     return res.status(201).json(saved);
   } catch (error) {
+    console.error("[SaveMealPlan] failed", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
     return res.status(500).json({ message: error.message });
   }
 }

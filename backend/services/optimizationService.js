@@ -1,5 +1,7 @@
 import { getIngredientPricing, normalizeIngredientName } from "./pricingService.js";
 
+const MAX_HIGH_PRIORITY_ITEMS = 5;
+
 function estimateWeight(name, count) {
   const key = normalizeIngredientName(name);
   const tinySpices = ["cardamom", "cloves", "cinnamon", "nutmeg", "saffron", "mace"];
@@ -64,6 +66,7 @@ function isProteinOrBase(name) {
     "potato",
     "minced chicken",
     "mince",
+    "noodle",
   ];
 
   return coreTerms.some((term) => key.includes(term));
@@ -97,6 +100,7 @@ function getIngredientRole(name) {
     "cucumber",
     "lemon",
     "oil",
+    "noodle",
   ];
   const optionalTerms = [
     "cardamom",
@@ -112,6 +116,7 @@ function getIngredientRole(name) {
     "cream",
     "coriander leaves",
     "mint leaves",
+    "peppercorn",
   ];
 
   if (essentialTerms.some((term) => key.includes(term))) return "essential";
@@ -119,8 +124,8 @@ function getIngredientRole(name) {
   return "supporting";
 }
 
-function deriveCoreIngredients(meals = []) {
-  const core = new Set();
+function derivePriorityIngredients(meals = []) {
+  const scores = new Map();
 
   for (const meal of meals) {
     const mealTokens = ingredientTokens(meal.meal || meal.mealName || "");
@@ -134,26 +139,33 @@ function deriveCoreIngredients(meals = []) {
       const tokens = ingredientTokens(ingredient);
       const overlap = tokens.filter((token) => mealTokens.includes(token)).length;
 
-      if (index <= 1) score += 7;
-      else if (index <= 3) score += 4;
+      if (index <= 1) score += 8;
+      else if (index <= 3) score += 5;
+      else score += 2;
 
-      if (isProteinOrBase(normalized)) score += 4;
-      if (overlap > 0) score += 6 + overlap;
+      if (isProteinOrBase(normalized)) score += 5;
+      if (overlap > 0) score += 4 + overlap;
       if (mealTokens.includes("keema") && (normalized.includes("chicken") || normalized.includes("mince"))) score += 8;
       if (mealTokens.includes("pav") && (normalized.includes("pav") || normalized.includes("bun") || normalized.includes("roll"))) score += 8;
+      if (normalized.includes("wrapper") || normalized.includes("noodle")) score += 4;
 
-      if (score >= 7) core.add(normalized);
+      scores.set(normalized, Math.max(scores.get(normalized) || 0, score));
     });
   }
 
-  return core;
+  return new Set(
+    [...scores.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, MAX_HIGH_PRIORITY_ITEMS)
+      .map(([name]) => name)
+  );
 }
 
-function optionalRank(item, budget, averagePrice, coreIngredients) {
+function optionalRank(item, budget, averagePrice, priorityIngredients) {
   const role = getIngredientRole(item.name);
   let score = 0;
 
-  if (coreIngredients.has(normalizeIngredientName(item.name))) return -1000;
+  if (priorityIngredients.has(normalizeIngredientName(item.name))) return -1000;
   if (role === "optional") score += 80;
   if (role === "supporting") score += 35;
   if (budget && item.price > budget * 0.35) score += 45;
@@ -162,14 +174,14 @@ function optionalRank(item, budget, averagePrice, coreIngredients) {
   return score;
 }
 
-function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
+function buildCartItems(unique, priorityIngredients, preselectedProducts = {}) {
   let totalCost = 0;
 
   const cartItems = unique.map(({ name, quantity }) => {
     const desired = estimateWeight(name, quantity);
     const liveSelection = preselectedProducts[name];
     const offers = liveSelection ? [] : getIngredientPricing(name, desired);
-    const isCore = coreIngredients.has(name);
+    const isCore = priorityIngredients.has(name);
 
     if (name === "water") {
       return {
@@ -179,8 +191,8 @@ function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
         price: 0,
         store: "Pantry",
         available: true,
-        priority: "high",
-        priorityLabel: "High priority",
+        priority: "optional",
+        priorityLabel: "Optional",
         reason: "Recipe ingredient noted for cooking, but treated as a pantry staple with no store pricing.",
         isCore,
       };
@@ -197,7 +209,7 @@ function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
         priority: isCore ? "high" : "optional",
         priorityLabel: isCore ? "High priority" : "Optional",
         reason: isCore
-          ? "Core ingredient for the selected meal, but no matching product was found in the store database."
+          ? `One of the top ${MAX_HIGH_PRIORITY_ITEMS} recipe-driving ingredients, but no matching product was found.`
           : "No matching product was found in the store database.",
         unavailableReason: "No matching product found in store database",
         isCore,
@@ -222,11 +234,11 @@ function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
       source: selected.source || (liveSelection ? "live" : "catalog"),
       storeSlug: selected.storeSlug || normalizeIngredientName(selected.store),
       available: true,
-      priority: "high",
-      priorityLabel: "High priority",
+      priority: isCore ? "high" : "optional",
+      priorityLabel: isCore ? "High priority" : "Optional",
       reason: isCore
-        ? "Core ingredient for the selected meal and included in the recommended cart."
-        : "Needed for the selected meals and included in the recommended cart.",
+        ? `One of the top ${MAX_HIGH_PRIORITY_ITEMS} recipe-driving ingredients, so it stays high priority.`
+        : "Included in the recipe, but placed in optional items outside the top-priority set.",
       isCore,
     };
   });
@@ -241,53 +253,38 @@ function buildCartItems(unique, coreIngredients, preselectedProducts = {}) {
   };
 }
 
-function applyBudgetPriorities(cartItems, budget, coreIngredients) {
+function applyBudgetPriorities(cartItems, budget, priorityIngredients) {
   const availableItems = cartItems.filter((item) => item.available);
   const fullCartTotal = availableItems.reduce((sum, item) => sum + item.price, 0);
   const averagePrice = availableItems.length ? fullCartTotal / availableItems.length : 0;
-  let highPriorityTotal = fullCartTotal;
-
-  for (const item of cartItems) {
-    if (!item.available) continue;
-    item.priority = "high";
-    item.priorityLabel = "High priority";
-    item.reason = item.isCore
-      ? "Core ingredient for the selected meal and included in the recommended cart."
-      : "Needed for the selected meals and included in the recommended cart.";
-  }
+  const baseHighPriorityTotal = cartItems
+    .filter((item) => item.available && item.priority === "high")
+    .reduce((sum, item) => sum + item.price, 0);
+  let highPriorityTotal = baseHighPriorityTotal;
 
   if (!budget || fullCartTotal <= budget) {
+    const optionalTotalWithinBudget = cartItems
+      .filter((item) => item.available && item.priority === "optional")
+      .reduce((sum, item) => sum + item.price, 0);
+
     return {
       cartItems,
       fullCartTotal: Number(fullCartTotal.toFixed(2)),
-      highPriorityTotal: Number(fullCartTotal.toFixed(2)),
-      optionalTotal: 0,
+      highPriorityTotal: Number(highPriorityTotal.toFixed(2)),
+      optionalTotal: Number(optionalTotalWithinBudget.toFixed(2)),
       budgetReason:
         budget && fullCartTotal <= budget
-          ? `The selected products fit within the ₹${budget} budget.`
-          : "No budget was provided, so all matched products are included.",
+          ? `The selected products fit within the Rs ${budget} budget, with only the top ${MAX_HIGH_PRIORITY_ITEMS} ingredients marked high priority.`
+          : `No budget was provided, so all matched products are shown, with only the top ${MAX_HIGH_PRIORITY_ITEMS} ingredients marked high priority.`,
     };
   }
 
-  const candidates = availableItems
-    .map((item) => ({ item, score: optionalRank(item, budget, averagePrice, coreIngredients) }))
-    .filter(({ item }) => !item.isCore && getIngredientRole(item.name) === "optional")
+  const optionalItems = availableItems
+    .filter((item) => !item.isCore)
+    .map((item) => ({ item, score: optionalRank(item, budget, averagePrice, priorityIngredients) }))
     .sort((a, b) => b.score - a.score || b.item.price - a.item.price);
 
-  for (const { item } of candidates) {
-    if (highPriorityTotal <= budget) break;
-    item.priority = "optional";
-    item.priorityLabel = "Optional";
-    item.reason =
-      item.price > budget * 0.35
-        ? `Optional because this single product takes a large share of the ₹${budget} budget.`
-        : "Optional add-on; remove it first if you want to stay closer to budget.";
-    highPriorityTotal -= item.price;
-  }
-
-  const optionalTotal = cartItems
-    .filter((item) => item.available && item.priority === "optional")
-    .reduce((sum, item) => sum + item.price, 0);
+  const optionalTotal = optionalItems.reduce((sum, { item }) => sum + item.price, 0);
 
   return {
     cartItems,
@@ -296,17 +293,17 @@ function applyBudgetPriorities(cartItems, budget, coreIngredients) {
     optionalTotal: Number(optionalTotal.toFixed(2)),
     budgetReason:
       highPriorityTotal <= budget
-        ? `The full cart was ₹${fullCartTotal.toFixed(2)}, so expensive non-core items were marked optional to target the ₹${budget} budget.`
-        : `Even after marking non-core expensive items optional, the high-priority products are ₹${highPriorityTotal.toFixed(2)}, above the ₹${budget} budget.`,
+        ? `The top ${MAX_HIGH_PRIORITY_ITEMS} high-priority ingredients fit within the Rs ${budget} budget.`
+        : `The top ${MAX_HIGH_PRIORITY_ITEMS} high-priority ingredients total Rs ${highPriorityTotal.toFixed(2)}, above the Rs ${budget} budget. Optional items remain visible separately.`,
   };
 }
 
 export function optimizeCart(ingredients, constraints = {}, context = {}) {
   const unique = normalizeIngredients(ingredients);
-  const coreIngredients = deriveCoreIngredients(context.meals || []);
-  const builtCart = buildCartItems(unique, coreIngredients, context.preselectedProducts || {});
+  const priorityIngredients = derivePriorityIngredients(context.meals || []);
+  const builtCart = buildCartItems(unique, priorityIngredients, context.preselectedProducts || {});
   const budget = Number(constraints.budget || 0);
-  const prioritized = applyBudgetPriorities(builtCart.cartItems, budget, coreIngredients);
+  const prioritized = applyBudgetPriorities(builtCart.cartItems, budget, priorityIngredients);
   const { cartItems, fullCartTotal, highPriorityTotal, optionalTotal, budgetReason } = prioritized;
   const storesUsed = Array.from(new Set(cartItems.filter((item) => item.available).map((item) => item.store)));
 

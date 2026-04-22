@@ -1,51 +1,89 @@
-import { Builder } from "selenium-webdriver";
-import chrome from "selenium-webdriver/chrome.js";
+import { chromium } from "playwright";
 
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function createChromeDriver({ headless = true } = {}) {
-  const options = new chrome.Options();
+export async function createBrowserSession({ headless = true } = {}) {
+  console.log(`[LiveScrape][Shared] launching chromium headless=${headless}`);
+  const browser = await chromium.launch({
+    headless,
+    args: [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-blink-features=AutomationControlled",
+    ],
+  });
 
-  if (headless) {
-    options.addArguments("--headless=new");
-  }
+  const context = await browser.newContext({
+    viewport: { width: 1366, height: 768 },
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+  });
 
-  options.addArguments("--no-sandbox");
-  options.addArguments("--disable-dev-shm-usage");
-  options.addArguments("--disable-blink-features=AutomationControlled");
-  options.addArguments("--window-size=1366,768");
-  options.addArguments(
-    "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
-  );
-
-  return new Builder().forBrowser("chrome").setChromeOptions(options).build();
+  const page = await context.newPage();
+  return { browser, context, page };
 }
 
-export async function firstWorkingElement(driver, locatorFactories = [], timeoutMs = 10000) {
-  for (const factory of locatorFactories) {
+export async function closeBrowserSession(session) {
+  if (!session) return;
+  try {
+    await session.context?.close();
+  } catch {
+    // ignore
+  }
+  try {
+    await session.browser?.close();
+  } catch {
+    // ignore
+  }
+}
+
+export async function clickFirstVisible(page, selectors = [], label = "selector", timeoutMs = 12000) {
+  for (const selector of selectors) {
     try {
-      return await driver.wait(factory(), timeoutMs);
+      console.log(`[LiveScrape][Shared] waiting for ${label} selector=${selector}`);
+      const locator = page.locator(selector).first();
+      await locator.waitFor({ state: "visible", timeout: timeoutMs });
+      await locator.click();
+      console.log(`[LiveScrape][Shared] clicked ${label} selector=${selector}`);
+      return selector;
     } catch {
-      // try next selector
+      // try next
     }
   }
 
-  throw new Error("No matching selector found");
+  throw new Error(`No visible selector found for ${label}`);
 }
 
-export async function safeText(element) {
+export async function fillFirstVisible(page, selectors = [], value = "", label = "selector", timeoutMs = 12000) {
+  for (const selector of selectors) {
+    try {
+      console.log(`[LiveScrape][Shared] waiting for ${label} selector=${selector}`);
+      const locator = page.locator(selector).first();
+      await locator.waitFor({ state: "visible", timeout: timeoutMs });
+      await locator.fill(value);
+      console.log(`[LiveScrape][Shared] filled ${label} selector=${selector} value="${value}"`);
+      return selector;
+    } catch {
+      // try next
+    }
+  }
+
+  throw new Error(`No visible selector found for ${label}`);
+}
+
+export async function safeText(locator) {
   try {
-    return (await element.getText()).trim();
+    return (await locator.innerText()).trim();
   } catch {
     return "";
   }
 }
 
-export async function safeAttr(element, name) {
+export async function safeAttr(locator, name) {
   try {
-    return (await element.getAttribute(name))?.trim() || "";
+    return ((await locator.getAttribute(name)) || "").trim();
   } catch {
     return "";
   }

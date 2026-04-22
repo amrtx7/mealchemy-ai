@@ -40,18 +40,8 @@ export const generateMealsSchema = z.object({
 });
 
 export const saveMealPlanSchema = z.object({
-  query: z.string().trim().min(5),
-  constraints: z
-    .object({
-      budget: z.number().nullable().optional(),
-      cuisine: z.string().optional(),
-      mealType: z.string().optional(),
-      diet: z.string().optional(),
-      protein: z.boolean().optional(),
-      servings: z.number().optional(),
-      dietType: z.string().optional(),
-    })
-    .optional(),
+  query: z.string().trim().min(1),
+  constraints: z.record(z.string(), z.any()).optional(),
   meals: z
     .array(
       z.object({

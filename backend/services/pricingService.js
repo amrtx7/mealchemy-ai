@@ -48,6 +48,15 @@ const ALIASES = new Map([
   ["lime juice", "lime"],
   ["cooking oil", "vegetable oil"],
   ["vegetable oil", "vegetable oil blend"],
+  ["red bell pepper", "capsicum red"],
+  ["yellow bell pepper", "capsicum yellow"],
+  ["green bean", "beans green"],
+  ["broccoli floret", "broccoli florets"],
+  ["broccoli floret", "broccoli"],
+  ["dried red chily", "red chili dried"],
+  ["fresh red chily", "red chili fresh"],
+  ["whole wheat hakka noodle", "hakka noodles whole wheat"],
+  ["whole wheat hakka noodles", "hakka noodles whole wheat"],
 ]);
 
 function singularizeToken(token) {
@@ -86,6 +95,30 @@ const PREPARED_PRODUCT_WORDS = new Set([
   "tablet",
   "tabs",
   "mix",
+]);
+
+const GENERIC_QUERY_TOKENS = new Set([
+  "rice",
+  "oil",
+  "flour",
+  "atta",
+  "milk",
+  "paneer",
+  "curd",
+  "yogurt",
+  "vinegar",
+  "sauce",
+  "sugar",
+  "salt",
+  "onion",
+  "tomato",
+  "bean",
+  "beans",
+  "chili",
+  "pepper",
+  "bread",
+  "noodle",
+  "noodles",
 ]);
 
 const PREFERRED_PRODUCT_WORDS = new Map([
@@ -160,6 +193,19 @@ function hasPreparedProductMismatch(query, product) {
   return productTokens.some(
     (token) => PREPARED_PRODUCT_WORDS.has(token) && !queryTokens.includes(token)
   );
+}
+
+function hasSpecificTokenMismatch(query, product) {
+  const queryTokens = tokens(query);
+  const productTokens = tokens(product.normalizedBaseName);
+  if (queryTokens.length <= 1) return false;
+
+  const specificTokens = queryTokens.filter((token) => !GENERIC_QUERY_TOKENS.has(token));
+  if (!specificTokens.length) {
+    return !queryTokens.every((token) => productTokens.includes(token));
+  }
+
+  return !specificTokens.every((token) => productTokens.includes(token));
 }
 
 function parseProduct(productName, store, price) {
@@ -258,7 +304,8 @@ export function getIngredientPricing(ingredient, desired = {}) {
       (product) =>
         product.score >= 60 &&
         unitMatches(product, desired) &&
-        !hasPreparedProductMismatch(ingredient, product)
+        !hasPreparedProductMismatch(ingredient, product) &&
+        !hasSpecificTokenMismatch(ingredient, product)
     )
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;

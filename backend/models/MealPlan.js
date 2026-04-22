@@ -41,15 +41,7 @@ const mealPlanSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     query: { type: String, required: true, trim: true },
-    constraints: {
-      budget: { type: Number, default: null },
-      cuisine: { type: String, default: "" },
-      mealType: { type: String, default: "" },
-      diet: { type: String, default: "" },
-      protein: { type: Boolean, default: false },
-      dietType: { type: String, default: "" },
-      servings: { type: Number, default: 1 },
-    },
+    constraints: { type: mongoose.Schema.Types.Mixed, default: {} },
     meals: [mealSchema],
     cart: [cartItemSchema],
     totalCost: { type: Number, default: 0 },

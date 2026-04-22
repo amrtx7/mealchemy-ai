@@ -1,83 +1,79 @@
-import { By, Key, until } from "selenium-webdriver";
-import { createChromeDriver, firstWorkingElement, safeAttr, sleep } from "./shared.js";
+import { closeBrowserSession, createBrowserSession, fillFirstVisible, safeAttr, sleep } from "./shared.js";
 
 const SELECTORS = {
-  locationInput: [
-    () => until.elementLocated(By.xpath('//input[@placeholder="search delivery location"]')),
-  ],
+  locationInput: ['input[placeholder="search delivery location"]'],
   locationChoice: [
-    () =>
-      until.elementLocated(
-        By.xpath('//div[contains(@class,"LocationSearchList__LocationDetailContainer")]')
-      ),
-    () => until.elementLocated(By.xpath('//ul[contains(@class,"LocationSearchList")]//li[1]')),
+    'div[class*="LocationSearchList__LocationDetailContainer"]',
+    'ul[class*="LocationSearchList"] li:first-child',
   ],
-  searchLauncher: [
-    () =>
-      until.elementLocated(
-        By.xpath('//div[contains(@class,"SearchBar__AnimationWrapper-sc-16lps2d-1")]')
-      ),
-  ],
+  searchLauncher: ['div[class*="SearchBar__AnimationWrapper-sc-16lps2d-1"]'],
   searchInput: [
-    () =>
-      until.elementLocated(
-        By.xpath('//input[contains(@class,"SearchBarContainer__Input-sc-hl8pft-3")]')
-      ),
-    () => until.elementLocated(By.xpath('//input[@id="search-input"]')),
-    () => until.elementLocated(By.xpath('//input[@type="search"]')),
-    () => until.elementLocated(By.xpath('//input[contains(@placeholder,"Search")]')),
+    'input[class*="SearchBarContainer__Input-sc-hl8pft-3"]',
+    'input#search-input',
+    'input[type="search"]',
+    'input[placeholder*="Search"]',
   ],
-  productCards: By.xpath(
-    '//div[contains(@class,"categories-table") and contains(@class,"search-wrapper")]/div/div'
-  ),
+  productCards: 'div[class*="categories-table"][class*="search-wrapper"] > div > div',
 };
+const MAX_PRODUCTS_PER_STORE = 3;
 
 export async function scrapeBlinkit(ingredient, pincode, options = {}) {
-  const driver = await createChromeDriver(options);
+  const session = await createBrowserSession(options);
+  const { page } = session;
   const products = [];
+
   console.log(`[LiveScrape][Blinkit] start ingredient="${ingredient}" pincode="${pincode}"`);
   console.log(`[LiveScrape][Blinkit] options headless=${options.headless !== false}`);
 
   try {
-    await driver.get("https://blinkit.com/");
+    await page.goto("https://blinkit.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
     console.log("[LiveScrape][Blinkit] opened homepage");
     await sleep(2500);
 
-    const locationBox = await firstWorkingElement(driver, SELECTORS.locationInput, 12000);
-    console.log("[LiveScrape][Blinkit] found location input");
-    await locationBox.clear();
-    await locationBox.sendKeys(pincode);
+    await fillFirstVisible(page, SELECTORS.locationInput, pincode, "location input");
     console.log(`[LiveScrape][Blinkit] entered pincode=${pincode}`);
     await sleep(1800);
 
-    const locationChoice = await firstWorkingElement(driver, SELECTORS.locationChoice, 12000);
-    console.log("[LiveScrape][Blinkit] found location choice");
-    await locationChoice.click();
-    console.log("[LiveScrape][Blinkit] location selected");
+    for (const selector of SELECTORS.locationChoice) {
+      try {
+        const choice = page.locator(selector).first();
+        await choice.waitFor({ state: "visible", timeout: 12000 });
+        await choice.click();
+        console.log(`[LiveScrape][Blinkit] location selected selector=${selector}`);
+        break;
+      } catch {
+        // try next
+      }
+    }
     await sleep(3000);
 
-    const launcher = await firstWorkingElement(driver, SELECTORS.searchLauncher, 12000);
-    console.log("[LiveScrape][Blinkit] found search launcher");
+    const launcher = page.locator(SELECTORS.searchLauncher[0]).first();
+    await launcher.waitFor({ state: "visible", timeout: 12000 });
     await launcher.click();
     console.log("[LiveScrape][Blinkit] search launcher clicked");
     await sleep(1200);
 
-    const searchInput = await firstWorkingElement(driver, SELECTORS.searchInput, 12000);
-    console.log("[LiveScrape][Blinkit] found search input");
-    await searchInput.clear();
-    await searchInput.sendKeys(ingredient, Key.ENTER);
-    console.log(`[LiveScrape][Blinkit] submitted search ingredient="${ingredient}"`);
+    const usedSearchSelector = await fillFirstVisible(
+      page,
+      SELECTORS.searchInput,
+      ingredient,
+      "search input"
+    );
+    console.log(`[LiveScrape][Blinkit] submitted search ingredient="${ingredient}" selector=${usedSearchSelector}`);
+    await page.keyboard.press("Enter");
     await sleep(4500);
 
-    const cards = await driver.findElements(SELECTORS.productCards);
-    console.log(`[LiveScrape][Blinkit] raw cards found=${cards.length}`);
+    const cards = await page.locator(SELECTORS.productCards).all();
+    console.log(
+      `[LiveScrape][Blinkit] raw cards found=${cards.length} processingTop=${Math.min(cards.length, MAX_PRODUCTS_PER_STORE)}`
+    );
 
     let skippedWithoutAdd = 0;
     let parseErrors = 0;
 
-    for (const [index, card] of cards.slice(0, 24).entries()) {
+    for (const [index, card] of cards.slice(0, MAX_PRODUCTS_PER_STORE).entries()) {
       try {
-        const text = await card.getText();
+        const text = (await card.innerText()).trim();
         if (!text.includes("ADD")) {
           skippedWithoutAdd += 1;
           continue;
@@ -93,32 +89,18 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
           startIdx = 1;
         }
 
-        let image = "";
-        try {
-          const imageElement = await card.findElement(By.tagName("img"));
-          image = await safeAttr(imageElement, "src");
-        } catch {
-          // ignore
-        }
+        const image = await safeAttr(card.locator("img").first(), "src");
 
-        let url = "";
-        try {
-          const anchor = await card.findElement(By.tagName("a"));
-          url = await safeAttr(anchor, "href");
-        } catch {
-          try {
-            const button = await card.findElement(By.xpath(".//div[@role='button' and @id]"));
-            const productId = await safeAttr(button, "id");
-            const productName = lines[startIdx + 1] || "";
-            if (productId) {
-              const slug = productName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "");
-              url = `https://blinkit.com/prn/${slug}/prid/${productId}`;
-            }
-          } catch {
-            // ignore
+        let url = await safeAttr(card.locator("a").first(), "href");
+        if (!url) {
+          const productId = await safeAttr(card.locator('div[role="button"][id]').first(), "id");
+          const productName = lines[startIdx + 1] || "";
+          if (productId) {
+            const slug = productName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-+|-+$/g, "");
+            url = `https://blinkit.com/prn/${slug}/prid/${productId}`;
           }
         }
 
@@ -144,7 +126,6 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
         if (parseErrors <= 3) {
           console.warn(`[LiveScrape][Blinkit] card parse failed index=${index}: ${error.message}`);
         }
-        // skip broken cards
       }
     }
 
@@ -156,7 +137,7 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
     console.error(`[LiveScrape][Blinkit] failed: ${error.message}`);
     throw error;
   } finally {
-    await driver.quit();
-    console.log("[LiveScrape][Blinkit] driver closed");
+    await closeBrowserSession(session);
+    console.log("[LiveScrape][Blinkit] browser session closed");
   }
 }
