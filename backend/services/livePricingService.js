@@ -86,6 +86,17 @@ function normalizeScrapedProduct(storeName, query, raw) {
     raw.name || raw.product_name || raw.productName || raw.title || raw["Product Name"] || ""
   ).trim();
 
+  const rawUrl = String(raw.url || raw.product_url || raw.productUrl || raw.href || "").trim();
+  const productUrl = rawUrl
+    ? rawUrl.startsWith("http")
+      ? rawUrl
+      : storeName === "Blinkit"
+        ? `https://blinkit.com${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`
+        : storeName === "Zepto"
+          ? `https://www.zeptonow.com${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`
+          : rawUrl
+    : "";
+
   return {
     store: storeName,
     storeSlug: STORE_META[storeName]?.slug || normalizeIngredientName(storeName),
@@ -96,7 +107,7 @@ function normalizeScrapedProduct(storeName, query, raw) {
     price: parsePrice(raw.price || raw.Price || raw.selling_price || raw.offerPrice),
     mrp: parsePrice(raw.mrp || raw.MRP || raw.original_price || raw.originalPrice),
     imageUrl: String(raw.image || raw.image_url || raw.imageUrl || raw.Image || "").trim(),
-    productUrl: String(raw.url || raw.product_url || raw.productUrl || raw.href || "").trim(),
+    productUrl,
     deliveryTime: String(raw.delivery_time || raw.deliveryTime || raw.eta || raw["Delivery Time"] || "").trim(),
   };
 }

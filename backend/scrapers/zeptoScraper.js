@@ -121,7 +121,23 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
     console.log(`[LiveScrape][Zepto] parsed products=${products.length} parseErrors=${parseErrors}`);
     return products;
   } catch (error) {
+    const meta = {
+      url: "",
+      title: "",
+    };
+    try {
+      meta.url = page.url();
+    } catch {
+      // ignore
+    }
+    try {
+      meta.title = await page.title();
+    } catch {
+      // ignore
+    }
+
     console.error(`[LiveScrape][Zepto] failed: ${error.message}`);
+    console.error(`[LiveScrape][Zepto] meta url=${meta.url} title=${meta.title}`);
     throw error;
   } finally {
     await closeBrowserSession(session);

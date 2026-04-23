@@ -9,21 +9,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { query, setQuery, setMeals, setCart, setConstraints, setTotalCost, setCartSummary } = useMeals();
 
-  const [filters, setFilters] = useState({
-    cuisine: "Indian",
-    mealType: "Lunch",
-    diet: "Veg",
-    budget: "",
-    protein: false
-  });
-
-  const handleFilterChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+  const [mealType, setMealType] = useState("Lunch");
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -32,11 +18,7 @@ export default function Home() {
     try {
       const payload = {
         query,
-        cuisine: filters.cuisine,
-        mealType: filters.mealType,
-        diet: filters.diet,
-        budget: filters.budget ? Number(filters.budget) : undefined,
-        protein: filters.protein
+        mealType,
       };
       const { data } = await api.post("/meals/generate", payload);
       setMeals(data.meals || []);
@@ -158,58 +140,35 @@ export default function Home() {
                 <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="e.g. A comforting Sunday brunch with pancakes and fresh fruits..."
+                  placeholder="e.g. South Indian veg dinner under ₹300, high protein, 30 min, no peanuts"
                   className="input-magic min-h-[100px] text-lg py-3"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Cuisine Style</label>
-                  <select name="cuisine" value={filters.cuisine} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
-                    <option value="Indian">Indian</option>
-                    <option value="Punjabi">Punjabi</option>
-                    <option value="South Indian">South Indian</option>
-                    <option value="Kerala">Kerala</option>
-                    <option value="Chinese">Chinese</option>
-                    <option value="Italian">Italian</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Meal Setting</label>
-                  <select name="mealType" value={filters.mealType} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Snacks">Snacks</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Dietary Focus</label>
-                  <select name="diet" value={filters.diet} onChange={handleFilterChange} className="input-magic py-1.5 px-3 rounded-xl text-sm cursor-pointer hover:border-[#164E40]/40 transition-colors">
-                    <option value="Veg">Pure Vegetarian</option>
-                    <option value="Non-Veg">Non-Vegetarian</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">Expected Budget (₹)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#164E40]/40 font-bold text-xs">₹</span>
-                    <input
-                      type="number"
-                      name="budget"
-                      value={filters.budget}
-                      onChange={handleFilterChange}
-                      placeholder="500"
-                      className="input-magic py-1.5 pl-7 pr-3 rounded-xl text-sm"
-                    />
-                  </div>
+              <div className="space-y-3">
+                <p className="block text-[10px] font-bold text-[#164E40]/60 uppercase tracking-widest">
+                  Meal type
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {["Breakfast", "Lunch", "Dinner", "Snacks"].map((value) => {
+                    const selected = mealType === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setMealType(value)}
+                        className={
+                          selected
+                            ? "btn-primary !shadow-none text-sm py-2"
+                            : "btn-secondary !shadow-none text-sm py-2"
+                        }
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-
 
               {error && (
                 <div className="bg-[#ffe5e5] text-[#8b0000] p-4 rounded-lg text-center border-brutal border-black font-bold shadow-neo-sm">

@@ -1,6 +1,7 @@
 import MealPlan from "../models/MealPlan.js";
 import User from "../models/User.js";
 import { generateMeals } from "../services/aiService.js";
+import { generateText, isAiConfigured } from "../services/aiProviderService.js";
 import { mergeMealConstraints, parseMealQuery } from "../services/parserService.js";
 import { optimizeCart } from "../services/optimizationService.js";
 import { convertDishesToIngredients, mergeIngredients } from "../services/ingredientService.js";
@@ -69,6 +70,81 @@ export async function getHistory(req, res) {
   try {
     const items = await MealPlan.find({ userId: req.user.id }).sort({ createdAt: -1 });
     return res.status(200).json(items);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+export async function getMealPlanById(req, res) {
+  try {
+    const { id } = req.params;
+    const plan = await MealPlan.findOne({ _id: id, userId: req.user.id });
+    if (!plan) return res.status(404).json({ message: "Meal plan not found" });
+    return res.status(200).json(plan);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+export async function generateRecipesForMealPlan(req, res) {
+  try {
+    const { id } = req.params;
+    const plan = await MealPlan.findOne({ _id: id, userId: req.user.id });
+    if (!plan) return res.status(404).json({ message: "Meal plan not found" });
+
+    if (!isAiConfigured()) {
+      return res.status(400).json({ message: "AI is not configured. Set AI_API_KEY to generate recipes." });
+    }
+
+    const meals = Array.isArray(plan.meals) ? plan.meals : [];
+    const nextMeals = [];
+
+    for (const meal of meals) {
+      if (meal?.recipe) {
+        nextMeals.push(meal);
+        continue;
+      }
+
+      const title = meal?.mealName || meal?.meal || "Meal";
+      const ingredients = Array.isArray(meal?.ingredients) ? meal.ingredients : [];
+      const cuisine = meal?.cuisine || "";
+      const mealType = meal?.mealType || "";
+
+      const prompt = `Create a practical home-cooking recipe for the dish below.
+
+Dish: ${title}
+Cuisine: ${cuisine || "unspecified"}
+Meal type: ${mealType || "unspecified"}
+Ingredients: ${ingredients.length ? ingredients.join(", ") : "unspecified"}
+
+Rules:
+- Use only common kitchen steps and quantities (cups, tbsp, tsp, grams)
+- Keep it concise and beginner-friendly
+- Prefer 6 to 9 steps max; each step should be 1 sentence when possible
+- Avoid long explanations; make it scannable
+- Output STRICT JSON only (no markdown), in this shape:
+{
+  "servings": 2,
+  "prepTime": "10 min",
+  "cookTime": "20 min",
+  "steps": ["..."],
+  "tips": ["..."]
+}`;
+
+      const response = await generateText(prompt);
+      const raw = String(response.text || "").trim();
+      const cleaned = raw.replace(/```json|```/gi, "").trim();
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+      const jsonText = start !== -1 && end !== -1 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+      const recipe = JSON.parse(jsonText);
+
+      nextMeals.push({ ...(meal.toObject ? meal.toObject() : meal), recipe });
+    }
+
+    plan.meals = nextMeals;
+    await plan.save();
+    return res.status(200).json(plan);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

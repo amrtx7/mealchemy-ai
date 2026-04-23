@@ -3,6 +3,8 @@ import {
   generateMealPlan,
   getDashboard,
   getHistory,
+  getMealPlanById,
+  generateRecipesForMealPlan,
   getIngredients,
   liveCheckIngredients,
   optimizeCartFromMeals,
@@ -21,6 +23,8 @@ router.post("/meals/generate", requireAuth, validateRequest(generateMealsSchema)
 router.post("/meals/save", requireAuth, validateRequest(saveMealPlanSchema), saveMealPlan);
 router.get("/meals/history", requireAuth, getHistory);
 router.get("/meals/dashboard", requireAuth, getDashboard);
+router.get("/meals/:id", requireAuth, getMealPlanById);
+router.post("/meals/:id/recipes", requireAuth, generateRecipesForMealPlan);
 router.post("/meal/ingredients", requireAuth, validateRequest(getIngredientsSchema), getIngredients);
 router.post("/meal/live-check", requireAuth, validateRequest(liveCheckSchema), liveCheckIngredients);
 router.post("/cart/optimize", requireAuth, validateRequest(optimizeCartSchema), optimizeCartFromMeals);

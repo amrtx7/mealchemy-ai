@@ -86,6 +86,58 @@ function shortenMealTitle(rawTitle) {
   return titleCase(text.split(/\s+/).slice(0, 7).join(" "));
 }
 
+function sanitizeIngredientLabel(value) {
+  let text = String(value || "").trim();
+  if (!text) return "";
+
+  // drop parenthetical prep notes like "(sliced)" "(thick)" "(boiled/canned)"
+  text = text.replace(/\([^)]*\)/g, " ");
+
+  // normalize separators commonly used for prep
+  text = text.replace(/[•]+/g, " ");
+
+  // remove common preparation adjectives that shouldn't be in a grocery name
+  const PREP_WORDS = [
+    "sliced",
+    "crushed",
+    "slit",
+    "thick",
+    "thin",
+    "boiled",
+    "canned",
+    "cooked",
+    "chopped",
+    "diced",
+    "minced",
+    "grated",
+    "julienned",
+    "soaked",
+    "drained",
+    "rinsed",
+    "to taste",
+  ];
+
+  for (const word of PREP_WORDS) {
+    text = text.replace(new RegExp(`\\b${word}\\b`, "gi"), " ");
+  }
+
+  // remove leftover punctuation/slashes, collapse whitespace
+  text = text
+    .replace(/[\\/,_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // handle cases like "Onions" -> "Onion" (good for store matching)
+  if (text.toLowerCase().endsWith("s") && text.length > 3) {
+    // tiny heuristic: keep "glass", "mass", etc.
+    if (!/(ss|us|is)$/.test(text.toLowerCase())) {
+      text = text.slice(0, -1);
+    }
+  }
+
+  return text;
+}
+
 /**
  * @param {string} queryText  - The user's free-text query
  * @param {object} filters    - { cuisine, mealType, diet, budget, protein }
@@ -173,6 +225,9 @@ Return STRICT JSON array only:
       ...meal,
       meal: shortenMealTitle(meal.meal || meal.mealName),
       mealName: shortenMealTitle(meal.mealName || meal.meal),
+      ingredients: Array.isArray(meal.ingredients)
+        ? meal.ingredients.map(sanitizeIngredientLabel).filter(Boolean)
+        : [],
     }));
 
     console.log("[AI-DEBUG] Final meal titles:", meals.map((meal) => meal.meal).join(" | "));

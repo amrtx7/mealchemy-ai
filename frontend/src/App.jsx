@@ -9,6 +9,7 @@ import LiveCheck from "./pages/LiveCheck";
 import Cart from "./pages/Cart";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
+import MealPlanDetail from "./pages/MealPlanDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
@@ -91,6 +92,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <History />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/history/:id"
+            element={
+              <PrivateRoute>
+                <MealPlanDetail />
               </PrivateRoute>
             }
           />
