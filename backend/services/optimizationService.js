@@ -1,6 +1,6 @@
 import { getIngredientPricing, normalizeIngredientName } from "./pricingService.js";
 
-const MAX_HIGH_PRIORITY_ITEMS = 5;
+const MAX_HIGH_PRIORITY_ITEMS = 6;
 
 function estimateWeight(name, count) {
   const key = normalizeIngredientName(name);
@@ -37,39 +37,6 @@ function normalizeIngredients(ingredients) {
     map.set(name, (map.get(name) || 0) + 1);
   }
   return Array.from(map.entries()).map(([name, quantity]) => ({ name, quantity }));
-}
-
-function ingredientTokens(value) {
-  return normalizeIngredientName(value)
-    .split(" ")
-    .filter(Boolean);
-}
-
-function isProteinOrBase(name) {
-  const key = normalizeIngredientName(name);
-  const coreTerms = [
-    "chicken",
-    "mutton",
-    "fish",
-    "egg",
-    "paneer",
-    "tofu",
-    "rice",
-    "pav",
-    "bun",
-    "bread",
-    "roti",
-    "naan",
-    "paratha",
-    "dal",
-    "lentil",
-    "potato",
-    "minced chicken",
-    "mince",
-    "noodle",
-  ];
-
-  return coreTerms.some((term) => key.includes(term));
 }
 
 function getIngredientRole(name) {
@@ -125,40 +92,23 @@ function getIngredientRole(name) {
 }
 
 function derivePriorityIngredients(meals = []) {
-  const scores = new Map();
+  const ordered = [];
+  const seen = new Set();
 
   for (const meal of meals) {
-    const mealTokens = ingredientTokens(meal.meal || meal.mealName || "");
     const mealIngredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
-
-    mealIngredients.forEach((ingredient, index) => {
+    for (const ingredient of mealIngredients) {
       const normalized = normalizeIngredientName(ingredient);
-      if (!normalized) return;
-
-      let score = 0;
-      const tokens = ingredientTokens(ingredient);
-      const overlap = tokens.filter((token) => mealTokens.includes(token)).length;
-
-      if (index <= 1) score += 8;
-      else if (index <= 3) score += 5;
-      else score += 2;
-
-      if (isProteinOrBase(normalized)) score += 5;
-      if (overlap > 0) score += 4 + overlap;
-      if (mealTokens.includes("keema") && (normalized.includes("chicken") || normalized.includes("mince"))) score += 8;
-      if (mealTokens.includes("pav") && (normalized.includes("pav") || normalized.includes("bun") || normalized.includes("roll"))) score += 8;
-      if (normalized.includes("wrapper") || normalized.includes("noodle")) score += 4;
-
-      scores.set(normalized, Math.max(scores.get(normalized) || 0, score));
-    });
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      ordered.push(normalized);
+      if (ordered.length >= MAX_HIGH_PRIORITY_ITEMS) {
+        return new Set(ordered);
+      }
+    }
   }
 
-  return new Set(
-    [...scores.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, MAX_HIGH_PRIORITY_ITEMS)
-      .map(([name]) => name)
-  );
+  return new Set(ordered);
 }
 
 function optionalRank(item, budget, averagePrice, priorityIngredients) {

@@ -5,7 +5,7 @@ import { normalizeIngredientName } from "./pricingService.js";
 
 const SCRAPER_MODE = (process.env.LIVE_STORE_MODE || "selenium").toLowerCase();
 const DEFAULT_PINCODE = process.env.LIVE_STORE_PINCODE || "201301";
-const MAX_PRIORITY_INGREDIENTS = Number(process.env.LIVE_MAX_PRIORITY_INGREDIENTS || 5);
+const MAX_PRIORITY_INGREDIENTS = Number(process.env.LIVE_MAX_PRIORITY_INGREDIENTS || 3);
 const LIVE_HEADLESS = process.env.LIVE_STORE_HEADLESS !== "false";
 
 const STORE_META = {
@@ -39,15 +39,40 @@ function profileForIngredient(ingredient) {
   );
 }
 
-function getPriorityIngredients(ingredients = []) {
+function createFallbackProfile(ingredient) {
+  const normalized = normalizeIngredientName(ingredient);
+  return {
+    key: normalized,
+    match: [normalized],
+    searchTerms: [ingredient],
+    mustHaveAny: normalized.split(" ").filter(Boolean),
+    exclude: [],
+    preferred: [],
+  };
+}
+
+function getPriorityIngredients(ingredients = [], meals = []) {
   const seen = new Set();
   const picked = [];
 
+  // Primary source: first ingredients from selected meal recipes (in order).
+  for (const meal of meals) {
+    const mealIngredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+    for (const ingredient of mealIngredients) {
+      const normalized = normalizeIngredientName(ingredient);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      const profile = profileForIngredient(normalized) || createFallbackProfile(ingredient);
+      picked.push({ ingredient, normalizedIngredient: normalized, profile });
+      if (picked.length >= MAX_PRIORITY_INGREDIENTS) return picked;
+    }
+  }
+
+  // Fallback source when meal ingredient lists are missing.
   for (const ingredient of ingredients) {
     const normalized = normalizeIngredientName(ingredient);
     if (!normalized || seen.has(normalized)) continue;
-    const profile = profileForIngredient(normalized);
-    if (!profile) continue;
+    const profile = profileForIngredient(normalized) || createFallbackProfile(ingredient);
     seen.add(normalized);
     picked.push({ ingredient, normalizedIngredient: normalized, profile });
     if (picked.length >= MAX_PRIORITY_INGREDIENTS) break;
@@ -140,7 +165,7 @@ async function fetchRawStoreProducts(storeName, query, pincode) {
 }
 
 async function getBestStoreProduct(storeName, ingredientEntry, pincode) {
-  const query = ingredientEntry.profile.searchTerms[0] || ingredientEntry.ingredient;
+  const query = ingredientEntry.ingredient;
   const { products: rawProducts, debug } = await fetchRawStoreProducts(storeName, query, pincode);
   console.log(`[LivePricing] store=${storeName} rawProducts=${rawProducts.length} query="${query}"`);
   const products = rawProducts
@@ -195,7 +220,7 @@ export async function buildLiveComparison(payload = {}) {
   const meals = Array.isArray(payload.meals) ? payload.meals : [];
   const constraints = payload.constraints || {};
   const pincode = String(payload.pincode || DEFAULT_PINCODE);
-  const priorityIngredients = getPriorityIngredients(ingredients);
+  const priorityIngredients = getPriorityIngredients(ingredients, meals);
   console.log(
     `[LivePricing] start totalIngredients=${ingredients.length} priorityIngredients=${priorityIngredients.length} maxAllowed=${MAX_PRIORITY_INGREDIENTS} pincode=${pincode}`
   );
