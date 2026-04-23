@@ -88,3 +88,33 @@ export async function safeAttr(locator, name) {
     return "";
   }
 }
+
+export async function waitForStableLocatorCount(
+  page,
+  selector,
+  { timeoutMs = 15000, pollMs = 500, stableRounds = 3, minCount = 1 } = {}
+) {
+  const start = Date.now();
+  let previousCount = -1;
+  let stableCount = 0;
+  let currentCount = 0;
+
+  while (Date.now() - start < timeoutMs) {
+    currentCount = await page.locator(selector).count().catch(() => 0);
+
+    if (currentCount === previousCount) {
+      stableCount += 1;
+    } else {
+      stableCount = 0;
+      previousCount = currentCount;
+    }
+
+    if (currentCount >= minCount && stableCount >= stableRounds) {
+      return currentCount;
+    }
+
+    await sleep(pollMs);
+  }
+
+  return currentCount;
+}

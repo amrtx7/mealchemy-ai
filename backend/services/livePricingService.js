@@ -2,11 +2,17 @@ import { scrapeBlinkit } from "../scrapers/blinkitScraper.js";
 import { scrapeZepto } from "../scrapers/zeptoScraper.js";
 import { optimizeCart } from "./optimizationService.js";
 import { normalizeIngredientName } from "./pricingService.js";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const SCRAPER_MODE = (process.env.LIVE_STORE_MODE || "selenium").toLowerCase();
 const DEFAULT_PINCODE = process.env.LIVE_STORE_PINCODE || "201301";
 const MAX_PRIORITY_INGREDIENTS = Number(process.env.LIVE_MAX_PRIORITY_INGREDIENTS || 3);
 const LIVE_HEADLESS = process.env.LIVE_STORE_HEADLESS !== "false";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const LIVE_TMP_DIR = path.resolve(__dirname, "../tmp");
 
 const STORE_META = {
   Blinkit: { slug: "blinkit", color: "yellow" },
@@ -30,6 +36,19 @@ function parsePrice(value) {
   if (typeof value === "number") return value;
   const match = String(value || "").replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
   return match ? Number(match[1]) : 0;
+}
+
+function toAbsoluteStoreUrl(storeName, value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/")) {
+    if (storeName === "Zepto") return `https://www.zeptonow.com${raw}`;
+    if (storeName === "Blinkit") return `https://blinkit.com${raw}`;
+  }
+  if (storeName === "Zepto") return `https://www.zeptonow.com/${raw.replace(/^\/+/, "")}`;
+  if (storeName === "Blinkit") return `https://blinkit.com/${raw.replace(/^\/+/, "")}`;
+  return raw;
 }
 
 function profileForIngredient(ingredient) {
@@ -96,7 +115,7 @@ function normalizeScrapedProduct(storeName, query, raw) {
     price: parsePrice(raw.price || raw.Price || raw.selling_price || raw.offerPrice),
     mrp: parsePrice(raw.mrp || raw.MRP || raw.original_price || raw.originalPrice),
     imageUrl: String(raw.image || raw.image_url || raw.imageUrl || raw.Image || "").trim(),
-    productUrl: String(raw.url || raw.product_url || raw.productUrl || raw.href || "").trim(),
+    productUrl: toAbsoluteStoreUrl(storeName, raw.url || raw.product_url || raw.productUrl || raw.href || ""),
     deliveryTime: String(raw.delivery_time || raw.deliveryTime || raw.eta || raw["Delivery Time"] || "").trim(),
   };
 }
@@ -196,6 +215,20 @@ function chooseWinningProduct(products = []) {
   return [...available].sort((a, b) => a.price - b.price || b.score - a.score)[0];
 }
 
+async function persistLiveSnapshot(snapshot) {
+  try {
+    await mkdir(LIVE_TMP_DIR, { recursive: true });
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const latestPath = path.join(LIVE_TMP_DIR, "live-pricing-latest.json");
+    const historyPath = path.join(LIVE_TMP_DIR, `live-pricing-${ts}.json`);
+    const json = JSON.stringify(snapshot, null, 2);
+    await Promise.all([writeFile(latestPath, json, "utf8"), writeFile(historyPath, json, "utf8")]);
+    console.log(`[LivePricing] snapshot saved latest=${latestPath} history=${historyPath}`);
+  } catch (error) {
+    console.warn(`[LivePricing] snapshot save failed: ${error.message}`);
+  }
+}
+
 function buildLiveProductSelection(results = []) {
   const map = {};
   for (const result of results) {
@@ -274,6 +307,22 @@ export async function buildLiveComparison(payload = {}) {
     meals,
     preselectedProducts,
   });
+  const doneCount = results.filter((result) => result.hasAnyResult).length;
+  const notDoneCount = results.length - doneCount;
+  const snapshot = {
+    createdAt: new Date().toISOString(),
+    pincode,
+    mode: SCRAPER_MODE,
+    priorityIngredients: priorityIngredients.map((entry) => entry.ingredient),
+    doneCount,
+    notDoneCount,
+    results,
+    cartPreview,
+  };
+  await persistLiveSnapshot(snapshot);
+  console.log(
+    `[LivePricing] summary done=${doneCount} notDone=${notDoneCount} priorityCount=${priorityIngredients.length}`
+  );
 
   return {
     pincode,
@@ -281,6 +330,8 @@ export async function buildLiveComparison(payload = {}) {
     priorityIngredients: priorityIngredients.map((entry) => entry.ingredient),
     results,
     hasLiveResults: results.some((result) => result.hasAnyResult),
+    doneCount,
+    notDoneCount,
     cartPreview,
   };
 }

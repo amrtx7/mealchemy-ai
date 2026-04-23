@@ -1,4 +1,11 @@
-import { closeBrowserSession, createBrowserSession, fillFirstVisible, safeAttr, sleep } from "./shared.js";
+import {
+  closeBrowserSession,
+  createBrowserSession,
+  fillFirstVisible,
+  safeAttr,
+  sleep,
+  waitForStableLocatorCount,
+} from "./shared.js";
 
 const SELECTORS = {
   locationInput: ['input[placeholder="search delivery location"]'],
@@ -28,7 +35,11 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
   try {
     await page.goto("https://blinkit.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
     console.log("[LiveScrape][Blinkit] opened homepage");
-    await sleep(2500);
+    // await sleep(2500);
+
+    console.log("[LiveScrape][Blinkit] Reloading page to clear warnings/popups...");
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+    await sleep(3000);   // Important: wait after reload
 
     await fillFirstVisible(page, SELECTORS.locationInput, pincode, "location input");
     console.log(`[LiveScrape][Blinkit] entered pincode=${pincode}`);
@@ -61,7 +72,14 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
     );
     console.log(`[LiveScrape][Blinkit] submitted search ingredient="${ingredient}" selector=${usedSearchSelector}`);
     await page.keyboard.press("Enter");
-    await sleep(4500);
+    const stableCount = await waitForStableLocatorCount(page, SELECTORS.productCards, {
+      timeoutMs: 18000,
+      pollMs: 500,
+      stableRounds: 3,
+      minCount: 1,
+    });
+    console.log(`[LiveScrape][Blinkit] product cards stabilized count=${stableCount}`);
+    await sleep(1200);
 
     const cards = await page.locator(SELECTORS.productCards).all();
     console.log(

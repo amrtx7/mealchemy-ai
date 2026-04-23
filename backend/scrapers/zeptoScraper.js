@@ -1,4 +1,12 @@
-import { closeBrowserSession, createBrowserSession, fillFirstVisible, safeAttr, safeText, sleep } from "./shared.js";
+import {
+  closeBrowserSession,
+  createBrowserSession,
+  fillFirstVisible,
+  safeAttr,
+  safeText,
+  sleep,
+  waitForStableLocatorCount,
+} from "./shared.js";
 
 const SELECTORS = {
   locationLauncher: ["header div.a0Ppr", "header div[class*='a0Ppr']"],
@@ -19,7 +27,11 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
   try {
     await page.goto("https://www.zeptonow.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
     console.log("[LiveScrape][Zepto] opened homepage");
-    await sleep(3500);
+    // await sleep(3500);
+
+    console.log("[LiveScrape][Zepto] Reloading page to clear warnings/popups...");
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+    await sleep(3000);   // Important: wait after reload
 
     for (const selector of SELECTORS.locationLauncher) {
       try {
@@ -57,7 +69,14 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
     });
     console.log(`[LiveScrape][Zepto] opened search page ingredient="${ingredient}"`);
     await page.locator(SELECTORS.productCards).first().waitFor({ state: "visible", timeout: 20000 });
-    await sleep(4500);
+    const stableCount = await waitForStableLocatorCount(page, SELECTORS.productCards, {
+      timeoutMs: 18000,
+      pollMs: 500,
+      stableRounds: 3,
+      minCount: 1,
+    });
+    console.log(`[LiveScrape][Zepto] product cards stabilized count=${stableCount}`);
+    await sleep(1200);
 
     const cards = await page.locator(SELECTORS.productCards).all();
     console.log(
