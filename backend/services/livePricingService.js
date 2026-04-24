@@ -1,5 +1,6 @@
 import { scrapeBlinkit } from "../scrapers/blinkitScraper.js";
 import { scrapeZepto } from "../scrapers/zeptoScraper.js";
+import { closeBrowserSession, createBrowserSession } from "../scrapers/shared.js";
 import { optimizeCart } from "./optimizationService.js";
 import { normalizeIngredientName } from "./pricingService.js";
 
@@ -126,7 +127,7 @@ function scoreProduct(profile, ingredient, product) {
   return score;
 }
 
-async function fetchRawStoreProducts(storeName, query, pincode) {
+async function fetchRawStoreProducts(storeName, query, pincode, options = {}) {
   console.log(`[LivePricing] fetch store=${storeName} query="${query}" pincode="${pincode}" mode=${SCRAPER_MODE}`);
   if (SCRAPER_MODE !== "selenium") {
     return {
@@ -138,8 +139,8 @@ async function fetchRawStoreProducts(storeName, query, pincode) {
   try {
     const rawProducts =
       storeName === "Blinkit"
-        ? await scrapeBlinkit(query, pincode, { headless: LIVE_HEADLESS })
-        : await scrapeZepto(query, pincode, { headless: LIVE_HEADLESS });
+        ? await scrapeBlinkit(query, pincode, { headless: LIVE_HEADLESS, session: options.session })
+        : await scrapeZepto(query, pincode, { headless: LIVE_HEADLESS, session: options.session });
 
     return {
       products: rawProducts,
@@ -164,9 +165,9 @@ async function fetchRawStoreProducts(storeName, query, pincode) {
   }
 }
 
-async function getBestStoreProduct(storeName, ingredientEntry, pincode) {
+async function getBestStoreProduct(storeName, ingredientEntry, pincode, options = {}) {
   const query = ingredientEntry.ingredient;
-  const { products: rawProducts, debug } = await fetchRawStoreProducts(storeName, query, pincode);
+  const { products: rawProducts, debug } = await fetchRawStoreProducts(storeName, query, pincode, options);
   console.log(`[LivePricing] store=${storeName} rawProducts=${rawProducts.length} query="${query}"`);
   const products = rawProducts
     .map((item) => normalizeScrapedProduct(storeName, query, item))
@@ -228,11 +229,24 @@ export async function buildLiveComparison(payload = {}) {
     `[LivePricing] priority list=${priorityIngredients.map((entry) => entry.normalizedIngredient).join(", ") || "none"}`
   );
 
-  const results = await Promise.all(
-    priorityIngredients.map(async (entry) => {
+  let blinkitSession = null;
+  let zeptoSession = null;
+
+  try {
+    if (SCRAPER_MODE === "selenium" && priorityIngredients.length) {
+      [blinkitSession, zeptoSession] = await Promise.all([
+        createBrowserSession({ headless: LIVE_HEADLESS }),
+        createBrowserSession({ headless: LIVE_HEADLESS }),
+      ]);
+      console.log("[LivePricing] reusing one browser session per store for this live-check run");
+    }
+
+    const results = [];
+
+    for (const entry of priorityIngredients) {
       const [blinkitResult, zeptoResult] = await Promise.all([
-        getBestStoreProduct("Blinkit", entry, pincode),
-        getBestStoreProduct("Zepto", entry, pincode),
+        getBestStoreProduct("Blinkit", entry, pincode, { session: blinkitSession }),
+        getBestStoreProduct("Zepto", entry, pincode, { session: zeptoSession }),
       ]);
 
       const blinkit = blinkitResult.product;
@@ -242,7 +256,7 @@ export async function buildLiveComparison(payload = {}) {
         `[LivePricing] ingredient="${entry.ingredient}" blinkit=${blinkit?.productName || "none"} zepto=${zepto?.productName || "none"} selected=${selectedProduct?.store || "none"}`
       );
 
-      return {
+      results.push({
         ingredient: entry.ingredient,
         normalizedIngredient: entry.normalizedIngredient,
         searchQuery: entry.profile.searchTerms[0] || entry.ingredient,
@@ -265,22 +279,28 @@ export async function buildLiveComparison(payload = {}) {
           },
         ],
         hasAnyResult: Boolean(selectedProduct),
-      };
-    })
-  );
+      });
+    }
 
-  const preselectedProducts = buildLiveProductSelection(results);
-  const cartPreview = optimizeCart(ingredients, constraints, {
-    meals,
-    preselectedProducts,
-  });
+    const preselectedProducts = buildLiveProductSelection(results);
+    const cartPreview = optimizeCart(ingredients, constraints, {
+      meals,
+      preselectedProducts,
+    });
 
-  return {
-    pincode,
-    mode: SCRAPER_MODE,
-    priorityIngredients: priorityIngredients.map((entry) => entry.ingredient),
-    results,
-    hasLiveResults: results.some((result) => result.hasAnyResult),
-    cartPreview,
-  };
+    return {
+      pincode,
+      mode: SCRAPER_MODE,
+      maxPriorityIngredients: MAX_PRIORITY_INGREDIENTS,
+      priorityIngredients: priorityIngredients.map((entry) => entry.ingredient),
+      results,
+      hasLiveResults: results.some((result) => result.hasAnyResult),
+      cartPreview,
+    };
+  } finally {
+    await Promise.all([
+      closeBrowserSession(blinkitSession),
+      closeBrowserSession(zeptoSession),
+    ]);
+  }
 }

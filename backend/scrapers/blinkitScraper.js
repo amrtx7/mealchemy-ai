@@ -18,7 +18,8 @@ const SELECTORS = {
 const MAX_PRODUCTS_PER_STORE = 3;
 
 export async function scrapeBlinkit(ingredient, pincode, options = {}) {
-  const session = await createBrowserSession(options);
+  const ownsSession = !options.session;
+  const session = options.session || await createBrowserSession(options);
   const { page } = session;
   const products = [];
 
@@ -137,7 +138,9 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
     console.error(`[LiveScrape][Blinkit] failed: ${error.message}`);
     throw error;
   } finally {
-    await closeBrowserSession(session);
-    console.log("[LiveScrape][Blinkit] browser session closed");
+    if (ownsSession) {
+      await closeBrowserSession(session);
+      console.log("[LiveScrape][Blinkit] browser session closed");
+    }
   }
 }

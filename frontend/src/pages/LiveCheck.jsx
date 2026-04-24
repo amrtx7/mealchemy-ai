@@ -106,6 +106,7 @@ export default function LiveCheck() {
 
   const isLiveModeOff = liveCheck?.mode === "off";
   const hasNoLiveMatches = !loading && !error && liveCheck?.priorityIngredients?.length && !liveCheck?.hasLiveResults;
+  const maxPriorityIngredients = liveCheck?.maxPriorityIngredients;
 
   return (
     <section className="max-w-6xl mx-auto my-12 px-6">
@@ -115,7 +116,7 @@ export default function LiveCheck() {
           Store Matchup Before Cart
         </h1>
         <p className="theme-muted-text text-lg max-w-3xl mx-auto">
-          We include a maximum of 5 priority ingredients for live store checks, then pass the best matches into your cart.
+          We include a small set of priority ingredients for live store checks, then pass the best matches into your cart.
         </p>
       </div>
 
@@ -196,7 +197,10 @@ export default function LiveCheck() {
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Priority Items</p>
-                <p className="text-3xl font-black">{liveCheck?.priorityIngredients?.length || 0}</p>
+                <p className="text-3xl font-black">
+                  {liveCheck?.priorityIngredients?.length || 0}
+                  {maxPriorityIngredients ? ` / ${maxPriorityIngredients}` : ""}
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest opacity-75">Live Matches</p>

@@ -9,7 +9,8 @@ const SELECTORS = {
 const MAX_PRODUCTS_PER_STORE = 3;
 
 export async function scrapeZepto(ingredient, pincode, options = {}) {
-  const session = await createBrowserSession(options);
+  const ownsSession = !options.session;
+  const session = options.session || await createBrowserSession(options);
   const { page } = session;
   const products = [];
 
@@ -124,7 +125,9 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
     console.error(`[LiveScrape][Zepto] failed: ${error.message}`);
     throw error;
   } finally {
-    await closeBrowserSession(session);
-    console.log("[LiveScrape][Zepto] browser session closed");
+    if (ownsSession) {
+      await closeBrowserSession(session);
+      console.log("[LiveScrape][Zepto] browser session closed");
+    }
   }
 }

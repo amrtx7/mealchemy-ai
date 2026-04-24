@@ -6,12 +6,20 @@ function parseCli(rawArgs) {
   const defaultStore = "blinkit";
   const defaultIngredient = "paneer";
   const defaultPincode = "201301";
+  const knownStores = new Set(["blinkit", "zepto", "noop"]);
+  const isFlag = (value) => String(value || "").startsWith("-");
 
   let store = defaultStore;
   const first = args[0];
   if (first && !first.startsWith("--")) {
     store = first;
     args.shift();
+  }
+
+  const storeFlagIndex = args.findIndex((arg) => arg === "--store" || arg === "-s");
+  if (storeFlagIndex >= 0 && args[storeFlagIndex + 1]) {
+    store = args[storeFlagIndex + 1];
+    args.splice(storeFlagIndex, 2);
   }
 
   let pincode = "";
@@ -23,9 +31,19 @@ function parseCli(rawArgs) {
 
   let ingredient = "";
   const ingredientFlagIndex = args.findIndex((arg) => arg === "--product" || arg === "--ingredient" || arg === "-i");
-  if (ingredientFlagIndex >= 0 && args[ingredientFlagIndex + 1]) {
-    ingredient = args[ingredientFlagIndex + 1];
-    args.splice(ingredientFlagIndex, 2);
+  if (ingredientFlagIndex >= 0) {
+    const ingredientParts = [];
+    let cursor = ingredientFlagIndex + 1;
+
+    while (cursor < args.length && !isFlag(args[cursor])) {
+      ingredientParts.push(args[cursor]);
+      cursor += 1;
+    }
+
+    if (ingredientParts.length) {
+      ingredient = ingredientParts.join(" ");
+      args.splice(ingredientFlagIndex, 1 + ingredientParts.length);
+    }
   }
 
   // Backward-compatible positional parsing:
@@ -35,6 +53,14 @@ function parseCli(rawArgs) {
     if (/^\d{4,10}$/.test(lastArg)) {
       pincode = lastArg;
       args.pop();
+    }
+  }
+
+  if (!ingredient && args.length > 0) {
+    const trailingStore = args[0]?.toLowerCase();
+    if (knownStores.has(trailingStore)) {
+      store = trailingStore;
+      args.shift();
     }
   }
 
