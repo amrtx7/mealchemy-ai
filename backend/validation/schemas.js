@@ -53,6 +53,7 @@ export const saveMealPlanSchema = z.object({
         proteinLevel: z.string().optional(),
         cookingTime: z.string().optional(),
         ingredients: z.array(z.string().min(1)),
+        recipe: z.any().optional(),
       })
     )
     .min(1),

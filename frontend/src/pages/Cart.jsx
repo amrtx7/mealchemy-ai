@@ -169,7 +169,7 @@ export default function Cart() {
         status: response.status,
         id: response?.data?._id,
       });
-      navigate("/history");
+      navigate(`/history/${response?.data?._id || ""}`);
     } catch (err) {
       console.error("[Cart] Save failed", {
         message: err?.message,

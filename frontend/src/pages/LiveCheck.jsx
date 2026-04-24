@@ -234,6 +234,7 @@ export default function LiveCheck() {
                 <div className="grid lg:grid-cols-2 gap-5">
                   {result.storeProducts.map((entry) => {
                     const product = entry.product;
+                    const debug = entry.debug;
                     return (
                       <div
                         key={`${result.normalizedIngredient}-${entry.store}`}
@@ -291,9 +292,21 @@ export default function LiveCheck() {
                           </div>
                         ) : (
                           <div className="min-h-[130px] flex items-center justify-center text-center">
-                            <p className="theme-muted-text font-semibold">
-                              No strong live match found on {entry.store} for this ingredient yet.
-                            </p>
+                            <div className="space-y-3">
+                              <p className="theme-muted-text font-semibold">
+                                No strong live match found on {entry.store} for this ingredient yet.
+                              </p>
+                              {debug?.status && (
+                                <div className="text-[12px] font-black uppercase tracking-[0.15em] theme-muted-text">
+                                  Status: {debug.status}
+                                </div>
+                              )}
+                              {debug?.message && (
+                                <pre className="text-left text-xs whitespace-pre-wrap bg-white/70 border-[2px] border-black rounded-lg p-3 max-h-40 overflow-auto">
+                                  {debug.message}
+                                </pre>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>

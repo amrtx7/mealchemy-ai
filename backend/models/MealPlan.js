@@ -33,6 +33,7 @@ const mealSchema = new mongoose.Schema(
     proteinLevel: { type: String, trim: true, default: "" },
     cookingTime: { type: String, trim: true, default: "" },
     ingredients: [{ type: String, required: true, trim: true }],
+    recipe: { type: mongoose.Schema.Types.Mixed, default: null },
   },
   { _id: false }
 );

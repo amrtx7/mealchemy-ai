@@ -99,6 +99,10 @@ export default function History() {
     navigate("/cart");
   };
 
+  const viewRecipe = (entry) => {
+    navigate(`/history/${entry._id}`);
+  };
+
   return (
     <section className="max-w-6xl mx-auto my-10 px-6 space-y-8">
       <div className="theme-raised p-8">
@@ -230,6 +234,13 @@ export default function History() {
                   className="btn-secondary whitespace-nowrap w-full py-3 px-8 text-sm"
                 >
                   View Cart
+                </button>
+
+                <button
+                  onClick={() => viewRecipe(entry)}
+                  className="btn-primary whitespace-nowrap w-full py-3 px-8 text-sm mt-3"
+                >
+                  View Recipe
                 </button>
               </article>
             ))}
