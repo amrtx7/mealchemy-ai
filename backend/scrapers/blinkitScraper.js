@@ -1,116 +1,127 @@
-import { closeBrowserSession, createBrowserSession, fillFirstVisible, safeAttr, sleep } from "./shared.js";
+import { closeBrowserSession, createBrowserSession } from "./shared.js";
+
+const BLINKIT_PINCODE = process.env.BLINKIT_PINCODE || "110044";
+const MAX_PRODUCTS_PER_STORE = 12;
 
 const SELECTORS = {
-  locationInput: ['input[placeholder="search delivery location"]'],
-  locationChoice: [
-    'div[class*="LocationSearchList__LocationDetailContainer"]',
-    'ul[class*="LocationSearchList"] li:first-child',
-  ],
-  searchLauncher: ['div[class*="SearchBar__AnimationWrapper-sc-16lps2d-1"]'],
-  searchInput: [
-    'input[class*="SearchBarContainer__Input-sc-hl8pft-3"]',
-    'input#search-input',
-    'input[type="search"]',
-    'input[placeholder*="Search"]',
-  ],
-  productCards: 'div[class*="categories-table"][class*="search-wrapper"] > div > div',
+  locationInput: '//input[@placeholder="search delivery location"]',
+  locationChoice: '//div[contains(@class,"LocationSearchList__LocationDetailContainer")]',
+  searchLauncher: '//div[contains(@class,"SearchBar__AnimationWrapper-sc-16lps2d-1")]',
+  searchInput: '//input[contains(@class,"SearchBarContainer__Input-sc-hl8pft-3")]',
+  resultsWrapper: '//div[contains(@class,"categories-table has-less-products search-wrapper")]',
+  productCards: '//div[contains(@class,"categories-table has-less-products search-wrapper")]/div/div',
 };
-const MAX_PRODUCTS_PER_STORE = 3;
 
-export async function scrapeBlinkit(ingredient, pincode, options = {}) {
+async function ensureBlinkitSessionReady(session, page, effectivePincode) {
+  if (session.__blinkitReady) {
+    return;
+  }
+
+  if (!session.__blinkitBootstrapPromise) {
+    session.__blinkitBootstrapPromise = (async () => {
+      await page.goto("https://blinkit.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
+      console.log("[LiveScrape][Blinkit] opened homepage");
+
+      const locationBox = page.locator(SELECTORS.locationInput).first();
+      await locationBox.waitFor({ state: "visible", timeout: 15000 });
+      await locationBox.clear();
+      await locationBox.fill(effectivePincode);
+      console.log(`[LiveScrape][Blinkit] entered pincode=${effectivePincode}`);
+
+      await page.waitForTimeout(2000);
+
+      const locationContainer = page.locator(SELECTORS.locationChoice).first();
+      await locationContainer.waitFor({ state: "visible", timeout: 15000 });
+      await locationContainer.click();
+      console.log("[LiveScrape][Blinkit] location selected");
+
+      await page.waitForTimeout(4000);
+      session.__blinkitReady = true;
+    })();
+  }
+
+  await session.__blinkitBootstrapPromise;
+}
+
+export async function scrapeBlinkit(ingredient, _pincode, options = {}) {
   const ownsSession = !options.session;
   const session = options.session || await createBrowserSession(options);
-  const { page } = session;
-  const products = [];
+  const page = options.page || session.page;
+  const effectivePincode = BLINKIT_PINCODE;
 
-  console.log(`[LiveScrape][Blinkit] start ingredient="${ingredient}" pincode="${pincode}"`);
+  console.log(
+    `[LiveScrape][Blinkit] start ingredient="${ingredient}" pincode="${effectivePincode}" requested="${_pincode}"`
+  );
   console.log(`[LiveScrape][Blinkit] options headless=${options.headless !== false}`);
 
   try {
-    await page.goto("https://blinkit.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
-    console.log("[LiveScrape][Blinkit] opened homepage");
-    await sleep(2500);
+    await ensureBlinkitSessionReady(session, page, effectivePincode);
 
-    await fillFirstVisible(page, SELECTORS.locationInput, pincode, "location input");
-    console.log(`[LiveScrape][Blinkit] entered pincode=${pincode}`);
-    await sleep(1800);
+    await page.goto(`https://blinkit.com/s/?q=${encodeURIComponent(ingredient)}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 45000,
+    });
+    console.log(`[LiveScrape][Blinkit] opened search page ingredient="${ingredient}"`);
 
-    for (const selector of SELECTORS.locationChoice) {
-      try {
-        const choice = page.locator(selector).first();
-        await choice.waitFor({ state: "visible", timeout: 12000 });
-        await choice.click();
-        console.log(`[LiveScrape][Blinkit] location selected selector=${selector}`);
-        break;
-      } catch {
-        // try next
-      }
-    }
-    await sleep(3000);
-
-    const launcher = page.locator(SELECTORS.searchLauncher[0]).first();
-    await launcher.waitFor({ state: "visible", timeout: 12000 });
-    await launcher.click();
-    console.log("[LiveScrape][Blinkit] search launcher clicked");
-    await sleep(1200);
-
-    const usedSearchSelector = await fillFirstVisible(
-      page,
-      SELECTORS.searchInput,
-      ingredient,
-      "search input"
-    );
-    console.log(`[LiveScrape][Blinkit] submitted search ingredient="${ingredient}" selector=${usedSearchSelector}`);
-    await page.keyboard.press("Enter");
-    await sleep(4500);
+    await page.waitForSelector(SELECTORS.resultsWrapper, { timeout: 20000 });
+    await page.evaluate(() => window.scrollBy(0, 600));
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => window.scrollBy(0, 600));
+    await page.waitForTimeout(1500);
+    await page.locator(SELECTORS.resultsWrapper).first().waitFor({ state: "visible", timeout: 15000 });
+    await page.waitForTimeout(3000);
 
     const cards = await page.locator(SELECTORS.productCards).all();
-    console.log(
-      `[LiveScrape][Blinkit] raw cards found=${cards.length} processingTop=${Math.min(cards.length, MAX_PRODUCTS_PER_STORE)}`
-    );
+    const limitedCards = cards.slice(0, MAX_PRODUCTS_PER_STORE);
+    console.log(`[LiveScrape][Blinkit] raw cards found=${cards.length} processingTop=${limitedCards.length}`);
 
-    let skippedWithoutAdd = 0;
-    let parseErrors = 0;
+    const products = [];
 
-    for (const [index, card] of cards.slice(0, MAX_PRODUCTS_PER_STORE).entries()) {
+    for (const [index, card] of limitedCards.entries()) {
       try {
-        const text = (await card.innerText()).trim();
-        if (!text.includes("ADD")) {
-          skippedWithoutAdd += 1;
-          continue;
-        }
+        const fullText = (await card.innerText()).trim();
+        if (!fullText.includes("ADD")) continue;
 
-        const lines = text
+        const lines = fullText
           .split("\n")
           .map((line) => line.trim())
           .filter(Boolean);
 
+        let img = "";
+        try {
+          img = (await card.locator("img").first().getAttribute("src")) || "";
+        } catch {
+          // ignore
+        }
+
         let startIdx = 0;
-        if (lines[0] && (lines[0].includes("OFF") || lines[0].includes("%"))) {
+        if (lines.length > 0 && (lines[0].includes("OFF") || lines[0].includes("%"))) {
           startIdx = 1;
         }
 
-        const image = await safeAttr(card.locator("img").first(), "src");
+        const delivery_time = lines[startIdx] || "";
+        const name = lines[startIdx + 1] || "";
+        const quantity = lines[startIdx + 2] || "";
+        const price = lines[startIdx + 3] || "";
 
-        let url = await safeAttr(card.locator("a").first(), "href");
-        if (!url) {
-          const productId = await safeAttr(card.locator('div[role="button"][id]').first(), "id");
-          const productName = lines[startIdx + 1] || "";
-          if (productId) {
-            const slug = productName
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-+|-+$/g, "");
+        let url = "";
+        try {
+          const innerDiv = card.locator("//div[@role='button' and @id]").first();
+          const productId = await innerDiv.getAttribute("id");
+          if (productId && /^\d+$/.test(productId)) {
+            const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
             url = `https://blinkit.com/prn/${slug}/prid/${productId}`;
           }
+        } catch {
+          // ignore
         }
 
         const product = {
-          delivery_time: lines[startIdx] || "",
-          name: lines[startIdx + 1] || "",
-          quantity: lines[startIdx + 2] || "",
-          price: lines[startIdx + 3] || "",
-          image,
+          delivery_time,
+          name,
+          quantity,
+          price,
+          image: img,
           url,
         };
 
@@ -123,19 +134,18 @@ export async function scrapeBlinkit(ingredient, pincode, options = {}) {
           }
         }
       } catch (error) {
-        parseErrors += 1;
-        if (parseErrors <= 3) {
-          console.warn(`[LiveScrape][Blinkit] card parse failed index=${index}: ${error.message}`);
-        }
+        console.warn(`[LiveScrape][Blinkit] card parse failed index=${index}: ${error.message}`);
       }
     }
 
-    console.log(
-      `[LiveScrape][Blinkit] parsed products=${products.length} skippedWithoutAdd=${skippedWithoutAdd} parseErrors=${parseErrors}`
-    );
+    console.log(`[LiveScrape][Blinkit] parsed products=${products.length}`);
     return products;
   } catch (error) {
     console.error(`[LiveScrape][Blinkit] failed: ${error.message}`);
+    if (String(error.message || "").toLowerCase().includes("location")) {
+      session.__blinkitReady = false;
+      session.__blinkitBootstrapPromise = null;
+    }
     throw error;
   } finally {
     if (ownsSession) {

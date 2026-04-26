@@ -1,4 +1,13 @@
-import { closeBrowserSession, createBrowserSession, fillFirstVisible, safeAttr, safeText, sleep } from "./shared.js";
+import {
+  closeBrowserSession,
+  createBrowserSession,
+  fillFirstVisible,
+  safeAttr,
+  safeText,
+  sleep,
+  waitForStableLocatorCount,
+  withTimeout,
+} from "./shared.js";
 
 const SELECTORS = {
   locationLauncher: ["header div.a0Ppr", "header div[class*='a0Ppr']"],
@@ -8,49 +17,64 @@ const SELECTORS = {
 };
 const MAX_PRODUCTS_PER_STORE = 3;
 
+async function ensureZeptoSessionReady(session, page, pincode) {
+  if (session.__zeptoReady) {
+    return;
+  }
+
+  if (!session.__zeptoBootstrapPromise) {
+    session.__zeptoBootstrapPromise = (async () => {
+      await page.goto("https://www.zeptonow.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
+      console.log("[LiveScrape][Zepto] opened homepage");
+      await sleep(3500);
+
+      for (const selector of SELECTORS.locationLauncher) {
+        try {
+          const launcher = page.locator(selector).first();
+          await launcher.waitFor({ state: "visible", timeout: 15000 });
+          await launcher.click();
+          console.log(`[LiveScrape][Zepto] location launcher clicked selector=${selector}`);
+          break;
+        } catch {
+          // try next
+        }
+      }
+      await sleep(2200);
+
+      await fillFirstVisible(page, SELECTORS.locationInput, pincode, "location input", 15000);
+      console.log(`[LiveScrape][Zepto] entered pincode=${pincode}`);
+      await sleep(2200);
+
+      for (const selector of SELECTORS.locationChoice) {
+        try {
+          const choice = page.locator(selector).first();
+          await choice.waitFor({ state: "visible", timeout: 15000 });
+          await choice.click();
+          console.log(`[LiveScrape][Zepto] location selected selector=${selector}`);
+          break;
+        } catch {
+          // try next
+        }
+      }
+      await sleep(3000);
+      session.__zeptoReady = true;
+    })();
+  }
+
+  await session.__zeptoBootstrapPromise;
+}
+
 export async function scrapeZepto(ingredient, pincode, options = {}) {
   const ownsSession = !options.session;
   const session = options.session || await createBrowserSession(options);
-  const { page } = session;
+  const page = options.page || session.page;
   const products = [];
 
   console.log(`[LiveScrape][Zepto] start ingredient="${ingredient}" pincode="${pincode}"`);
   console.log(`[LiveScrape][Zepto] options headless=${options.headless !== false}`);
 
   try {
-    await page.goto("https://www.zeptonow.com/", { waitUntil: "domcontentloaded", timeout: 45000 });
-    console.log("[LiveScrape][Zepto] opened homepage");
-    await sleep(3500);
-
-    for (const selector of SELECTORS.locationLauncher) {
-      try {
-        const launcher = page.locator(selector).first();
-        await launcher.waitFor({ state: "visible", timeout: 15000 });
-        await launcher.click();
-        console.log(`[LiveScrape][Zepto] location launcher clicked selector=${selector}`);
-        break;
-      } catch {
-        // try next
-      }
-    }
-    await sleep(2200);
-
-    await fillFirstVisible(page, SELECTORS.locationInput, pincode, "location input", 15000);
-    console.log(`[LiveScrape][Zepto] entered pincode=${pincode}`);
-    await sleep(2200);
-
-    for (const selector of SELECTORS.locationChoice) {
-      try {
-        const choice = page.locator(selector).first();
-        await choice.waitFor({ state: "visible", timeout: 15000 });
-        await choice.click();
-        console.log(`[LiveScrape][Zepto] location selected selector=${selector}`);
-        break;
-      } catch {
-        // try next
-      }
-    }
-    await sleep(3000);
+    await ensureZeptoSessionReady(session, page, pincode);
 
     await page.goto(`https://www.zeptonow.com/search?query=${encodeURIComponent(ingredient)}`, {
       waitUntil: "domcontentloaded",
@@ -58,7 +82,14 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
     });
     console.log(`[LiveScrape][Zepto] opened search page ingredient="${ingredient}"`);
     await page.locator(SELECTORS.productCards).first().waitFor({ state: "visible", timeout: 20000 });
-    await sleep(4500);
+    const stableCount = await waitForStableLocatorCount(page, SELECTORS.productCards, {
+      timeoutMs: 18000,
+      pollMs: 500,
+      stableRounds: 3,
+      minCount: 1,
+    });
+    console.log(`[LiveScrape][Zepto] product cards stabilized count=${stableCount}`);
+    await sleep(1200);
 
     const cards = await page.locator(SELECTORS.productCards).all();
     console.log(
@@ -69,42 +100,49 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
 
     for (const [index, card] of cards.slice(0, MAX_PRODUCTS_PER_STORE).entries()) {
       try {
-        const product = {
-          url: await safeAttr(card, "href"),
-          image: await safeAttr(card.locator("img").first(), "src"),
-          name: "",
-          quantity: "",
-          price: "",
-          mrp: "",
-          discount: "",
-          delivery_time: "",
-        };
+        console.log(`[LiveScrape][Zepto] parsing card index=${index}`);
+        const product = await withTimeout(
+          (async () => {
+            const nextProduct = {
+              url: await safeAttr(card, "href"),
+              image: await safeAttr(card.locator("img").first(), "src"),
+              name: "",
+              quantity: "",
+              price: "",
+              mrp: "",
+              discount: "",
+              delivery_time: "",
+            };
 
-        product.name =
-          (await safeText(card.locator("[data-slot-id='ProductName'] span").first())) ||
-          (await safeText(card.locator("[data-slot-id='ProductName']").first())) ||
-          (await safeAttr(card.locator("img").first(), "alt"));
+            nextProduct.name =
+              (await safeText(card.locator("[data-slot-id='ProductName'] span").first())) ||
+              (await safeText(card.locator("[data-slot-id='ProductName']").first())) ||
+              (await safeAttr(card.locator("img").first(), "alt"));
 
-        product.quantity = await safeText(card.locator("[data-slot-id='PackSize']").first());
+            nextProduct.quantity = await safeText(card.locator("[data-slot-id='PackSize']").first());
 
-        const priceNodes = await card.locator("span").all();
-        for (const node of priceNodes) {
-          const text = await node.innerText().catch(() => "");
-          if (!text.includes("₹")) continue;
-          if (!product.price) product.price = text.trim();
-          else if (!product.mrp) product.mrp = text.trim();
-        }
+            const priceNodes = await card.locator("span").all();
+            for (const node of priceNodes) {
+              const text = await node.innerText().catch(() => "");
+              if (!text.includes("₹") && !text.includes("Rs") && !text.includes("MRP")) continue;
+              if (!nextProduct.price) nextProduct.price = text.trim();
+              else if (!nextProduct.mrp) nextProduct.mrp = text.trim();
+            }
 
-        product.discount =
-          (await safeText(card.locator("div[class*='cYCsFo']").first())) ||
-          (await safeText(card.locator('span:has-text("OFF")').first()));
+            nextProduct.discount =
+              (await safeText(card.locator("div[class*='cYCsFo']").first())) ||
+              (await safeText(card.locator('span:has-text("OFF")').first()));
 
-        product.delivery_time = await safeText(
-          card.locator("[data-slot-id='EtaInformation']").first(),
+            nextProduct.delivery_time = await safeText(card.locator("[data-slot-id='EtaInformation']").first());
+            return nextProduct;
+          })(),
+          6000,
+          `Zepto card ${index}`
         );
 
         if (product.name) {
           products.push(product);
+          console.log(`[LiveScrape][Zepto] parsed card index=${index} name="${product.name}"`);
           if (products.length <= 3) {
             console.log(
               `[LiveScrape][Zepto] sample product ${products.length}: ${product.name} | ${product.price} | ${product.quantity} | ${product.delivery_time || "no-eta"}`
@@ -139,6 +177,10 @@ export async function scrapeZepto(ingredient, pincode, options = {}) {
 
     console.error(`[LiveScrape][Zepto] failed: ${error.message}`);
     console.error(`[LiveScrape][Zepto] meta url=${meta.url} title=${meta.title}`);
+    if (String(error.message || "").toLowerCase().includes("location")) {
+      session.__zeptoReady = false;
+      session.__zeptoBootstrapPromise = null;
+    }
     throw error;
   } finally {
     if (ownsSession) {

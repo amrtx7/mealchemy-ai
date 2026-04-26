@@ -4,6 +4,20 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function withTimeout(promise, ms, label = "operation") {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function createBrowserSession({ headless = true } = {}) {
   console.log(`[LiveScrape][Shared] launching chromium headless=${headless}`);
   const browser = await chromium.launch({
@@ -87,4 +101,34 @@ export async function safeAttr(locator, name) {
   } catch {
     return "";
   }
+}
+
+export async function waitForStableLocatorCount(
+  page,
+  selector,
+  { timeoutMs = 15000, pollMs = 500, stableRounds = 3, minCount = 1 } = {}
+) {
+  const start = Date.now();
+  let previousCount = -1;
+  let stableCount = 0;
+  let currentCount = 0;
+
+  while (Date.now() - start < timeoutMs) {
+    currentCount = await page.locator(selector).count().catch(() => 0);
+
+    if (currentCount === previousCount) {
+      stableCount += 1;
+    } else {
+      stableCount = 0;
+      previousCount = currentCount;
+    }
+
+    if (currentCount >= minCount && stableCount >= stableRounds) {
+      return currentCount;
+    }
+
+    await sleep(pollMs);
+  }
+
+  return currentCount;
 }

@@ -1,6 +1,6 @@
 import { scrapeBlinkit } from "../scrapers/blinkitScraper.js";
 import { scrapeZepto } from "../scrapers/zeptoScraper.js";
-import { closeBrowserSession, createBrowserSession } from "../scrapers/shared.js";
+import { closeBrowserSession, createBrowserSession, sleep } from "../scrapers/shared.js";
 import { optimizeCart } from "./optimizationService.js";
 import { normalizeIngredientName } from "./pricingService.js";
 
@@ -8,6 +8,8 @@ const SCRAPER_MODE = (process.env.LIVE_STORE_MODE || "selenium").toLowerCase();
 const DEFAULT_PINCODE = process.env.LIVE_STORE_PINCODE || "201301";
 const MAX_PRIORITY_INGREDIENTS = Number(process.env.LIVE_MAX_PRIORITY_INGREDIENTS || 3);
 const LIVE_HEADLESS = process.env.LIVE_STORE_HEADLESS !== "false";
+const LIVE_STORE_CONCURRENCY = Math.max(1, Number(process.env.LIVE_STORE_CONCURRENCY || 2));
+const LIVE_STORE_RETRIES = Math.max(0, Number(process.env.LIVE_STORE_RETRIES || 1));
 
 const STORE_META = {
   Blinkit: { slug: "blinkit", color: "yellow" },
@@ -56,7 +58,6 @@ function getPriorityIngredients(ingredients = [], meals = []) {
   const seen = new Set();
   const picked = [];
 
-  // Primary source: first ingredients from selected meal recipes (in order).
   for (const meal of meals) {
     const mealIngredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
     for (const ingredient of mealIngredients) {
@@ -69,7 +70,6 @@ function getPriorityIngredients(ingredients = [], meals = []) {
     }
   }
 
-  // Fallback source when meal ingredient lists are missing.
   for (const ingredient of ingredients) {
     const normalized = normalizeIngredientName(ingredient);
     if (!normalized || seen.has(normalized)) continue;
@@ -150,8 +150,16 @@ async function fetchRawStoreProducts(storeName, query, pincode, options = {}) {
   try {
     const rawProducts =
       storeName === "Blinkit"
-        ? await scrapeBlinkit(query, pincode, { headless: LIVE_HEADLESS, session: options.session })
-        : await scrapeZepto(query, pincode, { headless: LIVE_HEADLESS, session: options.session });
+        ? await scrapeBlinkit(query, pincode, {
+            headless: LIVE_HEADLESS,
+            session: options.session,
+            page: options.page,
+          })
+        : await scrapeZepto(query, pincode, {
+            headless: LIVE_HEADLESS,
+            session: options.session,
+            page: options.page,
+          });
 
     return {
       products: rawProducts,
@@ -202,6 +210,145 @@ async function getBestStoreProduct(storeName, ingredientEntry, pincode, options 
   };
 }
 
+function isRetryableFailure(message = "") {
+  const text = String(message || "").toLowerCase();
+  return (
+    text.includes("timeout") ||
+    text.includes("navigation") ||
+    text.includes("target closed") ||
+    text.includes("context closed") ||
+    text.includes("net::") ||
+    text.includes("locator")
+  );
+}
+
+async function createWorkerPages(session, count) {
+  const pages = [];
+  if (!session || count <= 0) return pages;
+
+  pages.push(session.page);
+  for (let index = 1; index < count; index += 1) {
+    pages.push(await session.context.newPage());
+  }
+
+  return pages;
+}
+
+async function closeExtraWorkerPages(session, pages = []) {
+  for (const page of pages) {
+    if (!page || page === session?.page) continue;
+    try {
+      await page.close();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+async function createTaskPage(session, fallbackPage = null) {
+  if (!session) return fallbackPage;
+  return session.context.newPage();
+}
+
+async function closeTaskPage(session, page) {
+  if (!page || page === session?.page) return;
+  try {
+    await page.close();
+  } catch {
+    // ignore
+  }
+}
+
+async function getBestStoreProductWithRetry(storeName, ingredientEntry, pincode, options = {}) {
+  const { session = null, page = null } = options;
+  const maxAttempts = session ? LIVE_STORE_RETRIES + 1 : 1;
+  let currentPage = page;
+  let lastResult = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (session) {
+      currentPage = await createTaskPage(session, currentPage);
+    }
+
+    lastResult = await getBestStoreProduct(storeName, ingredientEntry, pincode, {
+      session,
+      page: currentPage,
+    });
+
+    if (lastResult.debug?.status !== "failed") {
+      await closeTaskPage(session, currentPage);
+      console.log(
+        `[LivePricing] completed store=${storeName} ingredient="${ingredientEntry.ingredient}" status=ok top="${lastResult.product?.productName || "none"}"`
+      );
+      return { ...lastResult, page: null };
+    }
+
+    if (attempt >= maxAttempts || !isRetryableFailure(lastResult.debug?.message)) {
+      await closeTaskPage(session, currentPage);
+      console.log(
+        `[LivePricing] completed store=${storeName} ingredient="${ingredientEntry.ingredient}" status=${lastResult.debug?.status || "failed"}`
+      );
+      return { ...lastResult, page: null };
+    }
+
+    console.warn(
+      `[LivePricing] retrying store=${storeName} ingredient="${ingredientEntry.ingredient}" attempt=${attempt + 1}/${maxAttempts}`
+    );
+
+    await closeTaskPage(session, currentPage);
+    currentPage = null;
+    await sleep(700);
+  }
+
+  return {
+    ...(lastResult || { product: null, debug: { store: storeName, mode: "selenium", status: "failed" } }),
+    page: currentPage,
+  };
+}
+
+async function runStoreQueue(storeName, ingredientEntries, pincode, session = null) {
+  const resultMap = new Map();
+  if (!ingredientEntries.length) return resultMap;
+
+  if (!session) {
+    for (const entry of ingredientEntries) {
+      const result = await getBestStoreProductWithRetry(storeName, entry, pincode);
+      resultMap.set(entry.normalizedIngredient, result);
+    }
+    return resultMap;
+  }
+
+  const configuredConcurrency = storeName === "Blinkit" ? 1 : LIVE_STORE_CONCURRENCY;
+  const workerCount = Math.min(configuredConcurrency, ingredientEntries.length);
+  const pages = await createWorkerPages(session, workerCount);
+  let cursor = 0;
+
+  try {
+    await Promise.all(
+      pages.map(async (startPage, workerIndex) => {
+        while (cursor < ingredientEntries.length) {
+          const entry = ingredientEntries[cursor];
+          cursor += 1;
+          if (!entry) break;
+
+          console.log(
+            `[LivePricing] worker store=${storeName} worker=${workerIndex + 1}/${workerCount} ingredient="${entry.ingredient}"`
+          );
+          const result = await getBestStoreProductWithRetry(storeName, entry, pincode, {
+            session,
+            page: startPage,
+          });
+          resultMap.set(entry.normalizedIngredient, result);
+        }
+      })
+    );
+  } finally {
+    await closeExtraWorkerPages(session, pages);
+  }
+
+  return resultMap;
+}
+
 function chooseWinningProduct(products = []) {
   const available = products.filter(Boolean);
   if (!available.length) return null;
@@ -249,17 +396,20 @@ export async function buildLiveComparison(payload = {}) {
         createBrowserSession({ headless: LIVE_HEADLESS }),
         createBrowserSession({ headless: LIVE_HEADLESS }),
       ]);
-      console.log("[LivePricing] reusing one browser session per store for this live-check run");
+      console.log(
+        `[LivePricing] reusing one browser session per store with concurrency=${LIVE_STORE_CONCURRENCY} retries=${LIVE_STORE_RETRIES}`
+      );
     }
 
+    const [blinkitResults, zeptoResults] = await Promise.all([
+      runStoreQueue("Blinkit", priorityIngredients, pincode, blinkitSession),
+      runStoreQueue("Zepto", priorityIngredients, pincode, zeptoSession),
+    ]);
+
     const results = [];
-
     for (const entry of priorityIngredients) {
-      const [blinkitResult, zeptoResult] = await Promise.all([
-        getBestStoreProduct("Blinkit", entry, pincode, { session: blinkitSession }),
-        getBestStoreProduct("Zepto", entry, pincode, { session: zeptoSession }),
-      ]);
-
+      const blinkitResult = blinkitResults.get(entry.normalizedIngredient) || { product: null, debug: {} };
+      const zeptoResult = zeptoResults.get(entry.normalizedIngredient) || { product: null, debug: {} };
       const blinkit = blinkitResult.product;
       const zepto = zeptoResult.product;
       const selectedProduct = chooseWinningProduct([blinkit, zepto]);

@@ -4,7 +4,7 @@ import api from "../api/client";
 import { useMeals } from "../context/MealContext";
 
 function money(value) {
-  return `₹${Number(value || 0).toFixed(0)}`;
+  return `Rs ${Number(value || 0).toFixed(0)}`;
 }
 
 function storeBadgeClasses(storeSlug) {
@@ -51,6 +51,7 @@ export default function LiveCheck() {
       return;
     }
 
+    const controller = new AbortController();
     const interval = window.setInterval(() => {
       setSubstep((current) => (current + 1) % loadingSteps.length);
     }, 1200);
@@ -59,23 +60,37 @@ export default function LiveCheck() {
       setLoading(true);
       setError("");
       try {
-        const { data } = await api.post("/meal/live-check", {
-          ingredients,
-          meals,
-          constraints,
-        });
+        const { data } = await api.post(
+          "/meal/live-check",
+          {
+            ingredients,
+            meals,
+            constraints,
+          },
+          {
+            signal: controller.signal,
+          }
+        );
         setLiveCheck(data);
       } catch (err) {
+        if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
+          return;
+        }
         setError(err?.response?.data?.message || "Live store check failed. You can still continue to the cart.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
         window.clearInterval(interval);
       }
     }
 
     runLiveCheck();
 
-    return () => window.clearInterval(interval);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+    };
   }, [constraints, ingredients, loadingSteps.length, meals, navigate, setLiveCheck]);
 
   const continueToCart = () => {

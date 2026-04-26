@@ -123,7 +123,7 @@ export default function MealPlanDetail() {
             </h1>
             {plan?.createdAt && (
               <p className="theme-muted-text mt-3">
-                {formatDate(plan.createdAt)} · ₹{plan.totalCost || 0}
+                {formatDate(plan.createdAt)} · Rs {plan.totalCost || 0}
               </p>
             )}
           </div>
@@ -175,7 +175,7 @@ export default function MealPlanDetail() {
             {recipeMeals.length === 0 ? (
               <div className="theme-muted p-6">
                 <p className="theme-muted-text">
-                  No recipes were saved with this plan yet. (We’re now storing `meals[].recipe` when present.)
+                  Generate recipes for this saved plan when you want step-by-step cooking instructions.
                 </p>
                 <button
                   className="btn-primary mt-5"
@@ -199,4 +199,3 @@ export default function MealPlanDetail() {
     </section>
   );
 }
-
